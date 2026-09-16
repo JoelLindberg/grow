@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" x-data="{ season: localStorage.getItem('grow_season') || 'autumn' }" :data-season="season">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}GROW — Strength & Kindness{% endblock %}</title>
+
+    <!-- Tailwind CSS (dev CDN — utility styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Base Seasonal Theme & Gym Usability Tokens -->
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+
+    <!-- HTMX (Server interactivity & partial swaps) -->
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+
+    <!-- Alpine.js (Client reactivity, timers, counters) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-orange-500 selection:text-white">
+
+    <!-- Sticky Top Navigation Bar -->
+    <header
+        class="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-glass)] backdrop-blur-md">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- Brand & Motto -->
+            <a href="{% url 'home' %}" class="flex items-center gap-2.5 group">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 flex items-center justify-center shadow-lg shadow-orange-950/50 group-hover:scale-105 transition-transform">
+                    <!-- Oak Leaf / Sprout SVG -->
+                    <svg class="w-6 h-6 text-amber-100" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+                    </svg>
+                </div>
+                <div>
+                    <span class="font-extrabold text-xl tracking-tight text-[var(--text-primary)]">GROW</span>
+                    <span
+                        class="hidden sm:inline-block text-xs font-medium text-[var(--text-muted)] ml-2 border-l border-[var(--border-subtle)] pl-2">Strength
+                        &amp; Kindness</span>
+                </div>
+            </a>
+
+            <!-- Season Switcher Dropdown / Quick Selector (Alpine.js) -->
+            <div class="flex items-center gap-2" x-data="{ open: false }">
+                <div class="relative">
+                    <button @click="open = !open"
+                        class="btn-gym h-10 px-3 text-xs font-semibold rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-active)] flex items-center gap-1.5 transition-colors"
+                        title="Change season theme">
+                        <!-- Autumn Oak / Leaf Icon -->
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" :class="{
+                                  'bg-orange-500 shadow-[0_0_8px_#f97316]': season === 'autumn',
+                                  'bg-sky-400 shadow-[0_0_8px_#38bdf8]': season === 'winter',
+                                  'bg-emerald-400 shadow-[0_0_8px_#4ade80]': season === 'spring',
+                                  'bg-yellow-400 shadow-[0_0_8px_#facc15]': season === 'summer'
+                              }"></span>
+                        <span class="capitalize" x-text="season">Autumn</span>
+                        <svg class="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div x-show="open" @click.outside="open = false"
+                        x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-100"
+                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                        class="absolute right-0 mt-1.5 w-44 rounded-xl card-theme p-1.5 shadow-2xl z-50 border border-[var(--border-medium)] bg-[var(--bg-surface-elevated)]"
+                        style="display: none;">
+                        <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                            Theme Season</div>
+
+                        <button @click="season = 'autumn'; localStorage.setItem('grow_season', 'autumn'); open = false"
+                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
+                            :class="season === 'autumn' ? 'bg-orange-500/20 text-orange-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-stone-800'">
+                            <span class="flex items-center gap-2">🍁 Autumn (Oak &amp; Maple)</span>
+                            <span x-show="season === 'autumn'" class="text-orange-400 text-xs">●</span>
+                        </button>
+
+                        <button @click="season = 'winter'; localStorage.setItem('grow_season', 'winter'); open = false"
+                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
+                            :class="season === 'winter' ? 'bg-sky-500/20 text-sky-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-slate-800'">
+                            <span class="flex items-center gap-2">❄️ Winter (Frost &amp; Ice)</span>
+                            <span x-show="season === 'winter'" class="text-sky-400 text-xs">●</span>
+                        </button>
+
+                        <button @click="season = 'spring'; localStorage.setItem('grow_season', 'spring'); open = false"
+                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
+                            :class="season === 'spring' ? 'bg-emerald-500/20 text-emerald-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-emerald-950/40'">
+                            <span class="flex items-center gap-2">🌱 Spring (Sprout &amp; Moss)</span>
+                            <span x-show="season === 'spring'" class="text-emerald-400 text-xs">●</span>
+                        </button>
+
+                        <button @click="season = 'summer'; localStorage.setItem('grow_season', 'summer'); open = false"
+                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
+                            :class="season === 'summer' ? 'bg-yellow-500/20 text-yellow-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-yellow-950/40'">
+                            <span class="flex items-center gap-2">☀️ Summer (Sun &amp; Azure)</span>
+                            <span x-show="season === 'summer'" class="text-yellow-400 text-xs">●</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Admin Link -->
+                <a href="/admin/"
+                    class="btn-gym h-10 px-3 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                    Admin
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer with Philosophical Motto -->
+    <footer class="mt-auto border-t border-[var(--border-subtle)] py-6 text-center text-xs text-[var(--text-muted)]">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p class="italic text-[var(--text-secondary)]">"The stronger you get, the kinder you become."</p>
+            <p>GROW &copy; 2026 — Built with Django, Alpine.js &amp; HTMX</p>
+        </div>
+    </footer>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

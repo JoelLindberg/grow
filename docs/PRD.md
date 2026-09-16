@@ -1,0 +1,34 @@
+# Product Requirements Document - GROW
+
+## Vision
+*If you are strong, you have to be kind.*  
+*A strong body and mind to be kind.*
+*Strong Body - Strong Mind*
+
+**The stronger you get, the kinder you become**
+
+"Cultivating a strong body and mind creates the foundation necessary to be kind. When you are physically resilient and mentally balanced, you manage stress better, allowing you to extend genuine empathy and compassion to others without depleting your own energy."
+
+## MVP Features
+
+### 1. Workout plans
+* Defines structure of a workout
+    - Exercise
+            - Sets
+            - Reps
+            - Rest
+            - Supersets
+* Workout schedule **Prioritized feature**
+    - Implements workout plans according to user selection
+    - The user will be able to assign workout plans at recurring intervals (daily, weekly, monthly).
+* Workout result tracking **Prioritized feature**
+    - Tracks results of workouts
+        - If all goals were completed or not
+        - Well rested or not. This can help guiding the user to implement more rest days.
+        - Any notes the user wants to add
+* Plant based meal planning
+    - Foods that (when combined) make up full amino acid chains
+    - Protein calculation per meal
+    - Protein calculation per day
+
+

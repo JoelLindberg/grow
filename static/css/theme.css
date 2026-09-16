@@ -1,0 +1,237 @@
+/* ==========================================================================
+   GROW — Seasonal Design Tokens & Base Theme
+   Autumn Theme: Inspired by Oak, Maple, and Pumpkins
+   Architecture supports seamless switching between Autumn, Winter, Spring, Summer
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   SEASON: AUTUMN (Default)
+   Inspired by deep oak bark, scarlet maple leaves, and vibrant harvest pumpkins
+   -------------------------------------------------------------------------- */
+:root,
+[data-season="autumn"] {
+  --season-name: "Autumn";
+
+  /* Backgrounds */
+  --bg-app: #0c0a09;               /* Deep hearth / charred oak bark */
+  --bg-surface: #1c1917;           /* Warm stone 900 */
+  --bg-surface-elevated: #292524;  /* Warm stone 800 */
+  --bg-surface-glass: rgba(28, 25, 23, 0.75);
+  
+  /* Borders */
+  --border-subtle: rgba(217, 119, 6, 0.18);     /* Soft amber oak rim */
+  --border-medium: rgba(249, 115, 22, 0.35);    /* Warm pumpkin edge */
+  --border-active: #f97316;                     /* Bright pumpkin focus */
+
+  /* Text & Readability (High Contrast) */
+  --text-primary: #fafaf9;         /* Crisp warm ivory */
+  --text-secondary: #e7e5e4;       /* Soft warm silver */
+  --text-muted: #a8a29e;           /* Muted acorn dust */
+  --text-inverse: #0c0a09;
+
+  /* Theme Core Colors */
+  --color-pumpkin: #ea580c;        /* Vibrant roasted pumpkin */
+  --color-pumpkin-light: #f97316;  /* Harvest orange */
+  --color-pumpkin-glow: rgba(234, 88, 12, 0.28);
+
+  --color-maple: #dc2626;          /* Scarlet sugar maple */
+  --color-maple-deep: #991b1b;     /* Deep crimson leaf */
+  --color-maple-light: #f87171;    /* Bright maple blush */
+
+  --color-oak: #d97706;            /* Rich golden amber oak */
+  --color-oak-deep: #92400e;       /* Acorn brown */
+  --color-oak-gold: #fbbf24;       /* Golden sunlit autumn leaf */
+
+  /* Accent Roles */
+  --accent-primary: var(--color-pumpkin-light);
+  --accent-gradient: linear-gradient(135deg, #ea580c 0%, #b91c1c 50%, #d97706 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(234, 88, 12, 0.15) 0%, rgba(185, 28, 28, 0.15) 50%, rgba(217, 119, 6, 0.1) 100%);
+  --glow-primary: 0 0 25px rgba(234, 88, 12, 0.3);
+
+  /* Status Tokens */
+  --status-success: #16a34a;
+  --status-warning: #f59e0b;
+  --status-info: #0ea5e9;
+}
+
+/* --------------------------------------------------------------------------
+   SEASON: WINTER (Cold Frost, Midnight Slate, Deep Evergreen, Northern Cyan)
+   -------------------------------------------------------------------------- */
+[data-season="winter"] {
+  --season-name: "Winter";
+  --bg-app: #030712;
+  --bg-surface: #0f172a;
+  --bg-surface-elevated: #1e293b;
+  --bg-surface-glass: rgba(15, 23, 42, 0.8);
+  --border-subtle: rgba(56, 189, 248, 0.2);
+  --border-medium: rgba(56, 189, 248, 0.4);
+  --border-active: #38bdf8;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --accent-primary: #38bdf8;
+  --accent-gradient: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #065f46 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(37, 99, 235, 0.12) 100%);
+  --glow-primary: 0 0 25px rgba(56, 189, 248, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   SEASON: SPRING (Fresh Sprout, Blossom Peach, Dew Gold, Forest Moss)
+   -------------------------------------------------------------------------- */
+[data-season="spring"] {
+  --season-name: "Spring";
+  --bg-app: #05140a;
+  --bg-surface: #0e2716;
+  --bg-surface-elevated: #163d23;
+  --bg-surface-glass: rgba(14, 39, 22, 0.8);
+  --border-subtle: rgba(74, 222, 128, 0.2);
+  --border-medium: rgba(74, 222, 128, 0.4);
+  --border-active: #4ade80;
+  --text-primary: #f0fdf4;
+  --text-secondary: #bbf7d0;
+  --text-muted: #86efac;
+  --accent-primary: #4ade80;
+  --accent-gradient: linear-gradient(135deg, #16a34a 0%, #059669 50%, #f472b6 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(74, 222, 128, 0.15) 0%, rgba(244, 114, 182, 0.12) 100%);
+  --glow-primary: 0 0 25px rgba(74, 222, 128, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   SEASON: SUMMER (Sunlit Citron, Deep Warm Azure, Coral Fire)
+   -------------------------------------------------------------------------- */
+[data-season="summer"] {
+  --season-name: "Summer";
+  --bg-app: #080c16;
+  --bg-surface: #101c33;
+  --bg-surface-elevated: #1a2c4e;
+  --bg-surface-glass: rgba(16, 28, 51, 0.8);
+  --border-subtle: rgba(250, 204, 21, 0.2);
+  --border-medium: rgba(250, 204, 21, 0.4);
+  --border-active: #facc15;
+  --text-primary: #fefce8;
+  --text-secondary: #fef08a;
+  --text-muted: #ca8a04;
+  --accent-primary: #facc15;
+  --accent-gradient: linear-gradient(135deg, #eab308 0%, #f97316 50%, #06b6d4 100%);
+  --accent-gradient-subtle: linear-gradient(135deg, rgba(250, 204, 21, 0.15) 0%, rgba(249, 115, 22, 0.12) 100%);
+  --glow-primary: 0 0 25px rgba(250, 204, 21, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   BASE RESETS & GYM TOUCH TARGETS (PRD Requirement: Min 44px targets)
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100vh;
+  margin: 0;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reusable UI Utility Classes */
+.card-theme {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+  transition: all 0.25s ease;
+}
+
+.card-theme-glass {
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1rem;
+}
+
+.card-theme:hover {
+  border-color: var(--border-medium);
+}
+
+/* Touch-optimized button (Min 48px for gym hands) */
+.btn-gym {
+  min-height: 48px;
+  min-width: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.btn-gym:active {
+  transform: scale(0.97);
+}
+
+.btn-primary-gym {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  border: none;
+  box-shadow: var(--glow-primary);
+}
+
+.btn-primary-gym:hover {
+  opacity: 0.95;
+  filter: brightness(1.1);
+}
+
+.btn-secondary-gym {
+  background: var(--bg-surface-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+}
+
+.btn-secondary-gym:hover {
+  border-color: var(--border-active);
+  background: rgba(234, 88, 12, 0.12);
+}
+
+/* Gym Counter +/- controls */
+.counter-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.counter-btn:active {
+  transform: scale(0.92);
+  background: var(--color-pumpkin);
+  color: white;
+}
+
+/* Decorative Autumn Accents */
+.accent-gradient-text {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-border {
+  border-color: var(--border-active);
+  box-shadow: var(--glow-primary);
+}

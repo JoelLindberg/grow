@@ -1,0 +1,5 @@
+django>=5.1,<5.2
+django-htmx>=1.21
+
+# Production-only (requires MariaDB client libraries to build):
+# mysqlclient>=2.2
