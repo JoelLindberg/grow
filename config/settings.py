@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     # Third-party
     "django_htmx",
     # Local apps
+    "accounts",
     "workouts",
     "nutrition",
 ]

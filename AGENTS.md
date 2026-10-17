@@ -21,6 +21,13 @@ GROW is a mobile-first Progressive Web App (PWA) for workout logging and plant-b
 * Write code that is easy to understand and maintain.
 * The style of the code should respect how it must be written in Python for performance reasons.
 
+## Python venv
+
+For development, always use a python virtual environment. Don't use the system python.
+* Activate the virtual environment with: `source ./venv/bin/activate`
+* Expect it to already be available. You do not need to create it.
+* Do not run `pip install` or any other pip command without activating the virtual environment.
+
 ## Command Cheatsheet
 
 ```bash
@@ -48,6 +55,7 @@ python manage.py shell
 python manage.py test
 
 # Run tests for a specific app
+python manage.py test accounts
 python manage.py test workouts
 python manage.py test nutrition
 ```

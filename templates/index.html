@@ -3,255 +3,111 @@
 {% block title %}GROW — Strength and Kindness{% endblock %}
 
 {% block content %}
-<div class="space-y-8" x-data="{
-    activeTab: 'today',
-    wellRested: true,
-    workoutStarted: false,
-    exercises: [
-        { id: 1, name: 'Barbell Flat Bench Press', sets: 4, reps: 8, weight: 75, completed: false },
-        { id: 2, name: 'Incline Dumbbell Press', sets: 3, reps: 10, weight: 26, completed: false },
-        { id: 3, name: 'Hanging Leg Raises', sets: 3, reps: 12, weight: 0, completed: false }
-    ],
-    restTimer: 90,
-    timerRunning: false,
-    timerInterval: null,
-    startTimer() {
-        if (this.timerRunning) return;
-        this.timerRunning = true;
-        this.timerInterval = setInterval(() => {
-            if (this.restTimer > 0) {
-                this.restTimer--;
-            } else {
-                this.stopTimer();
-                this.restTimer = 90;
-                if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-            }
-        }, 1000);
-    },
-    stopTimer() {
-        this.timerRunning = false;
-        clearInterval(this.timerInterval);
-    }
-}">
+<div class="space-y-10 py-2 sm:py-6">
 
     <!-- Hero / Philosophical Welcome Banner -->
-    <section class="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-gradient-to-b from-[var(--bg-surface-elevated)] to-[var(--bg-surface)] p-6 sm:p-8 shadow-xl">
-        <!-- Subtle Autumn Glow Orb -->
-        <div class="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-gradient-to-br from-amber-600/20 via-orange-600/20 to-red-600/10 blur-3xl pointer-events-none"></div>
+    <section
+        class="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-gradient-to-b from-[var(--bg-surface-elevated)] to-[var(--bg-surface)] p-6 sm:p-10 shadow-2xl">
+        <!-- Ambient Glow Orb -->
+        <div
+            class="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-gradient-to-br from-amber-600/20 via-orange-600/20 to-red-600/10 blur-3xl pointer-events-none">
+        </div>
+        <div
+            class="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-gradient-to-tr from-amber-600/15 via-orange-600/15 to-red-600/5 blur-3xl pointer-events-none">
+        </div>
 
-        <div class="relative z-10 space-y-4">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/15 text-orange-400 border border-orange-500/30">
+        <div class="relative z-10 max-w-2xl space-y-5">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/15 text-orange-400 border border-orange-500/30">
                 <span>🍁</span>
                 <span>Autumn Palette: Oak, Maple &amp; Pumpkin</span>
             </div>
 
-            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--text-primary)]">
+            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-[var(--text-primary)] leading-tight">
                 If you are strong, you have to be <span class="accent-gradient-text">kind</span>.
             </h1>
 
-            <p class="text-sm sm:text-base text-[var(--text-secondary)] max-w-2xl leading-relaxed">
-                Cultivating a strong body and mind creates the foundation necessary to be kind. When you are physically resilient and mentally balanced, you extend genuine empathy without depleting your energy.
+            <p class="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed">
+                Cultivating a strong body and mind creates the foundation necessary to be kind. When you are physically
+                resilient and mentally balanced, you extend genuine empathy without depleting your energy.
             </p>
+
+            <!-- Member Access CTAs -->
+            <div class="pt-3 flex flex-wrap items-center gap-3">
+                <a href="{% url 'login' %}"
+                    class="btn-gym btn-primary-gym px-6 text-sm font-bold gap-2 shadow-xl shadow-orange-950/40">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Sign In to Your Dashboard</span>
+                </a>
+
+                <div
+                    class="px-3.5 py-2 text-xs text-[var(--text-muted)] border border-[var(--border-subtle)] rounded-xl bg-[var(--bg-surface)]">
+                    🌱 Invite-Only Platform
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Main Gym Dashboard Grid -->
+    <!-- Platform Pillars Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        <!-- Column 1 & 2: Primary Workout Flow (PRD Core Feature) -->
-        <div class="md:col-span-2 space-y-6">
-
-            <!-- Today's Workout Card -->
-            <div class="card-theme p-5 sm:p-6 space-y-5">
-                <div class="flex items-start justify-between gap-4">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Today's Schedule</span>
-                        </div>
-                        <h2 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">Upper Push &amp; Core</h2>
-                        <p class="text-xs text-[var(--text-muted)]">3 Exercises &bull; Estimated 45 min &bull; Rest: 90s</p>
-                    </div>
-
-                    <!-- Rest Timer Widget (Zero Latency Client UI) -->
-                    <div class="text-right">
-                        <div class="inline-flex flex-col items-center p-2 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)]">
-                            <span class="text-[10px] font-semibold uppercase text-[var(--text-muted)]">Rest Timer</span>
-                            <span class="text-lg font-mono font-bold text-[var(--color-pumpkin-light)]" x-text="`${Math.floor(restTimer/60)}:${(restTimer%60).toString().padStart(2, '0')}`">1:30</span>
-                            <button 
-                                @click="timerRunning ? stopTimer() : startTimer()"
-                                class="mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-orange-600/30 text-orange-300 hover:bg-orange-600/50 transition-colors"
-                                x-text="timerRunning ? 'Pause' : 'Start'"
-                            >Start</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Bar: Start / Postpone / Skip (User Flows Step 5) -->
-                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                    <button 
-                        @click="workoutStarted = !workoutStarted"
-                        class="btn-gym btn-primary-gym px-5 text-sm gap-2"
-                    >
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        </svg>
-                        <span x-text="workoutStarted ? 'Active Workout in Progress' : 'Start Workout'">Start Workout</span>
-                    </button>
-
-                    <button class="btn-gym btn-secondary-gym px-4 text-xs">
-                        Postpone to Tomorrow
-                    </button>
-
-                    <button class="btn-gym btn-secondary-gym px-4 text-xs text-[var(--text-muted)] hover:text-red-400">
-                        Mark Skipped
-                    </button>
-                </div>
-
-                <!-- Workout Exercise List with Gym Counters (User Flows Steps 6-8) -->
-                <div class="space-y-3 pt-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Exercises</h3>
-
-                    <template x-for="ex in exercises" :key="ex.id">
-                        <div 
-                            class="p-4 rounded-xl border transition-all duration-200"
-                            :class="ex.completed 
-                                ? 'bg-orange-950/20 border-orange-600/40 opacity-75' 
-                                : 'bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)] hover:border-[var(--border-medium)]'"
-                        >
-                            <div class="flex items-center justify-between gap-3 mb-3">
-                                <div class="flex items-center gap-3">
-                                    <!-- Checkbox (Touch target 44px) -->
-                                    <button 
-                                        @click="ex.completed = !ex.completed; if(ex.completed) startTimer();"
-                                        class="counter-btn"
-                                        :class="ex.completed ? 'bg-orange-600 text-white border-orange-500' : ''"
-                                        :title="ex.completed ? 'Mark incomplete' : 'Check set complete'"
-                                    >
-                                        <svg x-show="ex.completed" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span x-show="!ex.completed" class="w-3 h-3 rounded-sm border border-stone-500"></span>
-                                    </button>
-
-                                    <div>
-                                        <h4 class="font-bold text-sm text-[var(--text-primary)]" :class="{ 'line-through text-[var(--text-muted)]': ex.completed }" x-text="ex.name"></h4>
-                                        <p class="text-xs text-[var(--text-muted)]">
-                                            <span x-text="ex.sets"></span> sets &times; <span x-text="ex.reps"></span> reps
-                                            <span x-show="ex.weight > 0"> &bull; <span x-text="ex.weight"></span> kg</span>
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <span 
-                                    class="text-[11px] font-bold px-2 py-1 rounded-md"
-                                    :class="ex.completed ? 'bg-orange-600/20 text-orange-400' : 'bg-stone-800 text-stone-400'"
-                                    x-text="ex.completed ? 'Completed' : 'Pending'"
-                                ></span>
-                            </div>
-
-                            <!-- Interactive Rep & Weight +/- Touch Counters -->
-                            <div class="flex items-center justify-between border-t border-[var(--border-subtle)] pt-3 text-xs">
-                                <!-- Reps Controller -->
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[var(--text-muted)] font-medium">Reps:</span>
-                                    <button @click="if (ex.reps > 1) ex.reps--" class="counter-btn w-8 h-8 text-sm">-</button>
-                                    <span class="w-6 text-center font-bold text-sm" x-text="ex.reps"></span>
-                                    <button @click="ex.reps++" class="counter-btn w-8 h-8 text-sm">+</button>
-                                </div>
-
-                                <!-- Weight Controller -->
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[var(--text-muted)] font-medium">Kg:</span>
-                                    <button @click="if (ex.weight >= 2.5) ex.weight -= 2.5" class="counter-btn w-8 h-8 text-sm">-</button>
-                                    <span class="w-10 text-center font-bold text-sm" x-text="ex.weight"></span>
-                                    <button @click="ex.weight += 2.5" class="counter-btn w-8 h-8 text-sm">+</button>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <!-- Complete Workout Button -->
-                <div class="pt-2">
-                    <button 
-                        class="btn-gym w-full bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-orange-500 text-[var(--text-primary)] font-bold text-sm transition-all"
-                        :class="{ 'btn-primary-gym border-none': exercises.every(e => e.completed) }"
-                    >
-                        Save Workout Session &amp; Sync
-                    </button>
-                </div>
+        <!-- Pillar 1: Workouts -->
+        <div class="card-theme p-6 space-y-4 hover:border-[var(--border-active)] transition-colors">
+            <div
+                class="w-12 h-12 rounded-xl bg-orange-500/15 text-orange-400 flex items-center justify-center text-xl font-bold border border-orange-500/30">
+                🏋️‍♂️
             </div>
+            <h2 class="text-lg font-bold text-[var(--text-primary)]">Workout Tracking</h2>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                Log exercises, sets, reps, and weights with large touch targets designed for gym usability. Operates
+                seamlessly even in low-reception gym basements.
+            </p>
         </div>
 
-        <!-- Column 3: Nutrition & Mindful Rest (PRD Features) -->
-        <div class="space-y-6">
-
-            <!-- Plant-Based Nutrition Card (Amino Acids & Protein Target) -->
-            <div class="card-theme p-5 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-base">🌱</span>
-                        <h3 class="font-bold text-sm text-[var(--text-primary)]">Plant-Based Fuel</h3>
-                    </div>
-                    <span class="text-[11px] font-semibold text-orange-400">112g / 140g</span>
-                </div>
-
-                <!-- Daily Protein Progress Bar -->
-                <div>
-                    <div class="w-full h-2 rounded-full bg-[var(--bg-surface-elevated)] overflow-hidden">
-                        <div class="h-full rounded-full bg-gradient-to-r from-amber-600 via-orange-600 to-red-600" style="width: 80%;"></div>
-                    </div>
-                    <p class="text-[11px] text-[var(--text-muted)] mt-1.5 flex justify-between">
-                        <span>80% of daily protein target</span>
-                        <span>28g remaining</span>
-                    </p>
-                </div>
-
-                <!-- Amino Acid Pairing Feature (PRD: Full amino acid chains) -->
-                <div class="p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] space-y-2">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="font-bold text-[var(--text-secondary)]">Complete Protein Pairing</span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Optimal</span>
-                    </div>
-                    <p class="text-xs text-[var(--text-muted)]">
-                        <strong>Red Lentil Dahl + Wholegrain Brown Rice</strong> forms a complete amino acid profile (lysine + methionine).
-                    </p>
-                </div>
+        <!-- Pillar 2: Plant-Based Nutrition -->
+        <div class="card-theme p-6 space-y-4 hover:border-[var(--border-active)] transition-colors">
+            <div
+                class="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/30">
+                🌱
             </div>
-
-            <!-- Mind & Recovery Card (Well-rested tracking) -->
-            <div class="card-theme p-5 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-base">🌙</span>
-                        <h3 class="font-bold text-sm text-[var(--text-primary)]">Recovery &amp; Rest</h3>
-                    </div>
-                    <button 
-                        @click="wellRested = !wellRested"
-                        class="px-2.5 py-1 rounded-lg text-xs font-bold transition-colors"
-                        :class="wellRested ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30' : 'bg-stone-800 text-stone-400'"
-                        x-text="wellRested ? 'Well Rested ✓' : 'Fatigued'"
-                    >Well Rested ✓</button>
-                </div>
-                <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Tracking readiness helps the app suggest rest intervals. If sleep or recovery is low, consider lighter volume or an active recovery walk.
-                </p>
-            </div>
-
-            <!-- Seasonal Inspiration Note -->
-            <div class="card-theme p-4 text-xs space-y-2 border-dashed border-amber-900/60 bg-amber-950/10">
-                <div class="font-bold text-amber-400 flex items-center gap-1.5">
-                    <span>🍂</span>
-                    <span>Seasonal Theme System</span>
-                </div>
-                <p class="text-[var(--text-muted)] leading-relaxed">
-                    Theme adapts dynamically via CSS design tokens. Currently styled with <strong>Autumn</strong> (golden oak, crimson maple, and roasted pumpkin). You can preview Winter, Spring, or Summer via the theme selector above.
-                </p>
-            </div>
-
+            <h2 class="text-lg font-bold text-[var(--text-primary)]">Complete Plant Protein</h2>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                Smart amino acid combinations ensure full protein chains (lysine + methionine). Track daily protein
+                targets with tailored whole-food suggestions.
+            </p>
         </div>
 
+        <!-- Pillar 3: Recovery & Rest -->
+        <div class="card-theme p-6 space-y-4 hover:border-[var(--border-active)] transition-colors">
+            <div
+                class="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-xl font-bold border border-amber-500/30">
+                🌙
+            </div>
+            <h2 class="text-lg font-bold text-[var(--text-primary)]">Mindful Recovery</h2>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                Readiness check-ins guide intelligent rest days so training remains sustainable, balanced, and
+                invigorating.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- Seasonal Showcase Footer Note -->
+    <div
+        class="card-theme p-5 sm:p-6 bg-gradient-to-r from-[var(--bg-surface-elevated)] to-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+            <h3 class="text-sm font-bold text-[var(--text-primary)]">Adaptive Seasonal Interface</h3>
+            <p class="text-xs text-[var(--text-muted)]">
+                GROW's visual aesthetics change with nature's rhythm: Autumn Oak, Winter Frost, Spring Sprout, and
+                Summer Azure. Use the theme selector in the top bar to preview themes.
+            </p>
+        </div>
+        <a href="{% url 'login' %}" class="btn-gym btn-secondary-gym px-4 text-xs font-semibold shrink-0">
+            Member Sign In &rarr;
+        </a>
     </div>
 
 </div>

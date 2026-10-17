@@ -1,3 +1,12 @@
-from django.views import generic  # noqa: F401
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
-# Views for workout plans, scheduling, and session logging.
+
+@login_required
+def dashboard_view(request):
+    """
+    Main member dashboard: displays today's scheduled workout,
+    plant-based nutrition tracker, and recovery status.
+    Protected by authentication.
+    """
+    return render(request, "dashboard.html")

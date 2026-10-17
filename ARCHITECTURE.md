@@ -25,7 +25,7 @@
 | Layer | Technology | Rationale & Responsibility |
 | :--- | :--- | :--- |
 | **Backend & Core** | **Django 5.x** | Monolithic WSGI architecture. Idles under ~100MB RAM, perfectly matching the 1GB constraint. Handles routing, business logic, ORM, and migrations. |
-| **Auth** | **Django Auth** | Battle-tested session-based authentication with HTTP-only secure cookies and native CSRF protection. Eliminates multi-service JWT/JWKS overhead. |
+| **Auth** | **Django Auth** | Battle-tested session-based authentication with HTTP-only secure cookies and native CSRF protection. User onboarding is invite-only via secure, time-limited cryptographic URL tokens. |
 | **Admin Back-office** | **Django Admin** | Free, powerful management interface for curating exercise databases, plant-based food catalogs, and amino acid profiles. |
 | **Database Driver** | **`mysqlclient`** | High-performance C-extension driver for MariaDB 11.4 with connection pooling. This might not work, and we might need to replace it with a Python driver due to the host not having the necessary build tools. |
 | **Server Interactivity** | **HTMX** | Declarative AJAX swaps (completing exercises, updating schedules, dashboard widget refreshes) without full-page reloads. |
@@ -121,6 +121,7 @@ erDiagram
     User ||--o{ WorkoutSchedule : schedules
     User ||--o{ WorkoutSession : logs
     User ||--o{ MealPlan : creates
+    User ||--o{ UserInvitation : invites
 
     WorkoutPlan ||--o{ PlanExercise : contains
     Exercise ||--o{ PlanExercise : defines
@@ -137,6 +138,16 @@ erDiagram
         int id PK
         string username
         string email
+    }
+
+    UserInvitation {
+        int id PK
+        int invited_by_id FK
+        string email
+        string token
+        datetime created_at
+        datetime expires_at
+        datetime accepted_at
     }
 
     Exercise {
@@ -182,12 +193,31 @@ erDiagram
 ```
 
 
+# User Onboarding & Invite-Only Architecture
+
+To prevent platform spam and avoid the overhead of open self-service registration, new accounts can only be created via invitation.
+
+### Security Principles:
+1. **Unguessable Tokens (High Entropy)**:
+   - Instead of guessable IDs, the invite URL uses a cryptographically secure, random URL-safe string generated via Python's `secrets.token_urlsafe(32)` (256 bits of entropy).
+   - This makes brute-force enumeration computationally impossible (e.g., `https://grow.app/register/dGhpcy1pcy1hLWNyeXB0by1zZWN1cmUtdG9rZW4/`).
+2. **Time Constraints (TTL / Expiration)**:
+   - Every invitation stores an `expires_at` timestamp (default: 48 to 72 hours).
+   - If an invitee attempts to register with an expired link, the server rejects the request and prompts them to request a renewed invite.
+3. **Single-Use Enforcement**:
+   - The token is immediately marked `accepted_at = timezone.now()` upon successful user creation, preventing link reuse or replay.
+4. **Email Binding**:
+   - The invitation is tied to the recipient's email address in `UserInvitation`. The registration form locks the email field so the token cannot be transferred to an arbitrary address.
+5. **Admin Panel Management**:
+   - Django Admin provides actions to issue new invites, track pending vs. accepted invitations, and revoke compromised or unredeemed invitations.
+
+
 # Workout Execution & Offline Resilience Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as Athlete (Gym)
+    actor User as Member (Gym)
     participant UI as Alpine.js / DOM
     participant SW as Service Worker / LocalStorage
     participant Django as Django WSGI Server

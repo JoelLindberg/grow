@@ -31,4 +31,16 @@
     - Protein calculation per meal
     - Protein calculation per day
 
+### 2. User Access & Authentication (Invite-Only)
+* **No Open Self-Service Registration**: To prevent platform abuse and eliminate spam management overhead, public registration is disabled initially.
+* **Admin-Managed Invitations**:
+    - Admins generate invitations from the admin panel by entering the invitee's email address.
+    - An invitation email is sent containing a secure, unguessable registration link.
+* **Token Protection & Expiration**:
+    - High-entropy cryptographic token in the URL (`/register/<token>/`) to prevent brute-force guessing.
+    - Time-limited validity (e.g., expires after 48–72 hours).
+    - Single-use policy: token is invalidated immediately upon successful registration.
+    - Bound to the invited email address.
+
+
 
