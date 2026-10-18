@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Editor: {{ plan.name }} — GROW{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Navigation & Plan Header -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between gap-3">
+            <a href="{% url 'workouts:plan_list' %}"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Workout Plans</span>
+            </a>
+
+            <div class="flex items-center gap-2">
+                <span id="save-status"></span>
+                <a href="{% url 'workouts:plan_list' %}"
+                    class="btn-gym h-10 px-4 text-xs font-bold rounded-lg btn-secondary-gym">
+                    Done Editing
+                </a>
+            </div>
+        </div>
+
+        <!-- Plan Metadata Card (Editable) -->
+        <div class="card-theme p-5 sm:p-6 space-y-4" x-data="{ editingMeta: false }">
+            <div x-show="!editingMeta" class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Blueprint Editor</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                        {{ plan.name }}
+                    </h1>
+                    {% if plan.description %}
+                    <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                        {{ plan.description }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <button type="button" @click="editingMeta = true"
+                    class="btn-gym h-10 px-3 text-xs font-semibold rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] shrink-0 self-start">
+                    Edit Plan Details
+                </button>
+            </div>
+
+            <!-- Edit Metadata Form -->
+            <form x-show="editingMeta" style="display: none;" method="post" action="{% url 'workouts:plan_edit' plan.id %}"
+                hx-post="{% url 'workouts:plan_edit' plan.id %}"
+                hx-target="#save-status"
+                @submit="editingMeta = false"
+                class="space-y-4 pt-2">
+                {% csrf_token %}
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Plan Title</label>
+                    {{ plan_form.name }}
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Description / Notes</label>
+                    {{ plan_form.description }}
+                </div>
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" @click="editingMeta = false" class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-muted)]">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-gym btn-primary-gym h-10 px-4 text-xs font-bold shadow-md">
+                        Save Plan Info
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs sm:text-sm flex items-center justify-between border
+            {% if message.tags == 'success' %}
+                bg-emerald-950/40 border-emerald-500/40 text-emerald-200
+            {% elif message.tags == 'error' %}
+                bg-red-950/40 border-red-500/40 text-red-200
+            {% else %}
+                bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)]
+            {% endif %}">
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Workspace Grid (Exercises List + Add Exercise Builder) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Column: Exercise List (Lg: 7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
+                    <span>Planned Exercises</span>
+                </h2>
+                <span class="text-xs text-[var(--text-muted)]">Gym Sequence</span>
+            </div>
+
+            <!-- Include Partial Exercise List -->
+            {% include "workouts/partials/exercise_list.html" with exercises=exercises plan=plan %}
+        </div>
+
+        <!-- Column: Add Exercise Builder (Lg: 5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+            <div class="card-theme-glass p-5 sm:p-6 space-y-5 border border-[var(--border-medium)] sticky top-20 shadow-xl"
+                x-data="{
+                    selectedMuscleGroup: '',
+                    targetSets: 3,
+                    targetReps: 10,
+                    targetWeight: '',
+                    restSeconds: 60,
+                    setRest(val) { this.restSeconds = val; },
+                    setWeight(val) { this.targetWeight = val; }
+                }">
+
+                <div class="space-y-1 pb-3 border-b border-[var(--border-subtle)]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Builder</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-[var(--text-primary)]">Add Exercise</h3>
+                    <p class="text-xs text-[var(--text-muted)]">
+                        Select a home exercise, customize sets, reps, weight, and rest.
+                    </p>
+                </div>
+
+                <form method="post" action="{% url 'workouts:plan_exercise_add' plan.id %}"
+                    hx-post="{% url 'workouts:plan_exercise_add' plan.id %}"
+                    hx-target="#plan-exercise-list"
+                    hx-swap="outerHTML"
+                    class="space-y-4">
+                    {% csrf_token %}
+
+                    <!-- Muscle Group Filter / Exercise Selector -->
+                    <div class="space-y-1.5">
+                        <label for="id_exercise_select" class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                            Exercise <span class="text-orange-400">*</span>
+                        </label>
+                        <select name="exercise" id="id_exercise_select" required class="input-gym cursor-pointer">
+                            <option value="" disabled selected>— Choose an exercise —</option>
+                            {% regroup available_exercises by muscle_group as muscle_group_list %}
+                            {% for mg in muscle_group_list %}
+                            <optgroup label="── {{ mg.grouper }} ──" class="bg-stone-900 text-orange-400 font-bold">
+                                {% for ex in mg.list %}
+                                <option value="{{ ex.id }}" class="bg-stone-800 text-white font-normal">
+                                    {{ ex.name }}
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Target Sets & Reps Counters (Alpine.js Zero-Latency +/- Buttons) -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Sets -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] text-center">
+                                Target Sets
+                            </label>
+                            <div class="flex items-center justify-between gap-1 bg-[var(--bg-surface-elevated)] p-1 rounded-xl border border-[var(--border-subtle)]">
+                                <button type="button" @click="if (targetSets > 1) targetSets--" class="counter-btn" aria-label="Decrease sets">-</button>
+                                <input type="number" name="target_sets" x-model.number="targetSets" min="1" max="30" required
+                                    class="w-12 text-center font-bold text-lg bg-transparent text-[var(--text-primary)] focus:outline-none">
+                                <button type="button" @click="if (targetSets < 30) targetSets++" class="counter-btn" aria-label="Increase sets">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Reps -->
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] text-center">
+                                Target Reps
+                            </label>
+                            <div class="flex items-center justify-between gap-1 bg-[var(--bg-surface-elevated)] p-1 rounded-xl border border-[var(--border-subtle)]">
+                                <button type="button" @click="if (targetReps > 1) targetReps--" class="counter-btn" aria-label="Decrease reps">-</button>
+                                <input type="number" name="target_reps" x-model.number="targetReps" min="1" max="200" required
+                                    class="w-12 text-center font-bold text-lg bg-transparent text-[var(--text-primary)] focus:outline-none">
+                                <button type="button" @click="if (targetReps < 200) targetReps++" class="counter-btn" aria-label="Increase reps">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weight (Optional: Bodyweight if not set) -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                Weight (Optional)
+                            </label>
+                            <span class="text-xs font-semibold text-emerald-400" x-text="targetWeight ? `${targetWeight} kg` : '🌱 Bodyweight'">🌱 Bodyweight</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-[var(--bg-surface-elevated)] p-1 rounded-xl border border-[var(--border-subtle)]">
+                            <button type="button" @click="if (targetWeight && targetWeight >= 2.5) targetWeight = (parseFloat(targetWeight) - 2.5); else targetWeight = '';" class="counter-btn" aria-label="Decrease weight">-</button>
+                            <input type="number" name="target_weight_kg" x-model="targetWeight" min="0" max="500" step="0.5" placeholder="Leave empty for Bodyweight"
+                                class="w-full text-center font-bold text-base bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none">
+                            <button type="button" @click="targetWeight = (targetWeight ? parseFloat(targetWeight) + 2.5 : 2.5)" class="counter-btn" aria-label="Increase weight">+</button>
+                        </div>
+
+                        <!-- Quick Weight Presets -->
+                        <div class="flex items-center gap-1.5 pt-1 flex-wrap">
+                            <button type="button" @click="targetWeight = ''"
+                                :class="!targetWeight ? 'bg-emerald-950/60 text-emerald-300 font-bold border-emerald-500/40' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-muted)]'"
+                                class="h-8 px-2.5 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                🌱 Bodyweight
+                            </button>
+                            <button type="button" @click="targetWeight = 5"
+                                :class="targetWeight == 5 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-8 px-2 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                5kg
+                            </button>
+                            <button type="button" @click="targetWeight = 10"
+                                :class="targetWeight == 10 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-8 px-2 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                10kg
+                            </button>
+                            <button type="button" @click="targetWeight = 15"
+                                :class="targetWeight == 15 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-8 px-2 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                15kg
+                            </button>
+                            <button type="button" @click="targetWeight = 20"
+                                :class="targetWeight == 20 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-8 px-2 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                20kg
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Rest Interval (seconds) with Quick Preset Buttons (Default 60s) -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                Rest Between Sets
+                            </label>
+                            <span class="text-xs font-mono font-bold text-orange-400" x-text="`${restSeconds}s`">60s</span>
+                        </div>
+                        <input type="hidden" name="rest_seconds" :value="restSeconds">
+
+                        <div class="grid grid-cols-5 gap-1.5 pt-1">
+                            <button type="button" @click="setRest(30)"
+                                :class="restSeconds === 30 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-10 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                30s
+                            </button>
+                            <button type="button" @click="setRest(60)"
+                                :class="restSeconds === 60 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-10 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                60s
+                            </button>
+                            <button type="button" @click="setRest(90)"
+                                :class="restSeconds === 90 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-10 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                90s
+                            </button>
+                            <button type="button" @click="setRest(120)"
+                                :class="restSeconds === 120 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-10 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                2m
+                            </button>
+                            <button type="button" @click="setRest(180)"
+                                :class="restSeconds === 180 ? 'bg-orange-500 text-white font-bold' : 'bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)]'"
+                                class="h-10 rounded-lg text-xs border border-[var(--border-subtle)] transition-colors">
+                                3m
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" class="btn-gym btn-primary-gym w-full text-sm font-bold shadow-lg flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Add Exercise to Plan</span>
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

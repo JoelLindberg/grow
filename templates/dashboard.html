@@ -198,6 +198,42 @@
         <!-- Column 3: Nutrition & Mindful Rest (PRD Features) -->
         <div class="space-y-6">
 
+            <!-- Workout Blueprints / Plans Card -->
+            <div class="card-theme p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">📋</span>
+                        <h3 class="font-bold text-sm text-[var(--text-primary)]">Workout Blueprints</h3>
+                    </div>
+                    <a href="{% url 'workouts:plan_create' %}" class="text-xs font-semibold text-orange-400 hover:text-orange-300">
+                        + New
+                    </a>
+                </div>
+
+                {% if workout_plans %}
+                <div class="space-y-2">
+                    {% for p in workout_plans|slice:":3" %}
+                    <a href="{% url 'workouts:plan_edit' p.id %}"
+                        class="block p-2.5 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-orange-500/50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-[var(--text-primary)]">{{ p.name }}</span>
+                            <span class="text-[10px] text-orange-400 font-medium">{{ p.exercise_count }} ex &bull; ~{{ p.estimated_duration_minutes }}m</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-xs text-[var(--text-muted)]">
+                    No workout plans created yet. Build daily plans to organize your routine.
+                </p>
+                {% endif %}
+
+                <a href="{% url 'workouts:plan_list' %}"
+                    class="btn-gym w-full h-10 text-xs font-bold btn-secondary-gym rounded-lg">
+                    Manage All Plans
+                </a>
+            </div>
+
             <!-- Plant-Based Nutrition Card (Amino Acids & Protein Target) -->
             <div class="card-theme p-5 space-y-4">
                 <div class="flex items-center justify-between">

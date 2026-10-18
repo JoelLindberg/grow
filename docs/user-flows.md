@@ -17,6 +17,31 @@ Intended usage workflow for performing a workout:
 9. When the user has completed all exercises, the workout will be marked as completed.
 10. The user can then click a button to save the workout and it will be added to the workout history.
 
+## Workout editor
+
+Intended usage workflow for editing a workout:
+1. Login
+2. Navigate to the workout plans view
+3. Click on create workout plan or Select a existing workout plan (if any) to edit
+4. Edit the workout plan
+    * Add exercises
+        * Select an exercise from the exercise database
+        * Set the number of sets
+        * Set the number of reps per set
+        * Set the rest time between sets (optional) default 60 seconds
+        * Set the weight (optional) if not set, then the exercise is bodyweight
+        * Click on add exercise
+    * Remove exercises
+        * Click on remove exercise
+    * Edit exercises
+        * Click on edit exercise
+        * Change the number of sets
+        * Change the number of reps per set
+        * Change the rest time between sets
+        * Change the weight
+        * Click on save exercise
+5. Save the workout plan
+
 ## User Invitation & Onboarding (Invite-Only)
 Intended workflow for inviting a new member:
 

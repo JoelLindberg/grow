@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Create Workout Plan — GROW{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6">
+
+    <!-- Breadcrumb -->
+    <div>
+        <a href="{% url 'workouts:plan_list' %}"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Workout Plans</span>
+        </a>
+    </div>
+
+    <!-- Create Card -->
+    <div class="card-theme-glass p-6 sm:p-8 space-y-6 shadow-2xl border border-[var(--border-medium)]">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-400">New Blueprint</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] mt-1">
+                Create Workout Plan
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
+                Name your workout plan. You will add exercises, weights, and set targets in the next step.
+            </p>
+        </div>
+
+        <form method="post" action="{% url 'workouts:plan_create' %}" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Plan Name -->
+            <div class="space-y-1.5">
+                <label for="id_name" class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Plan Name <span class="text-orange-400">*</span>
+                </label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <p class="text-xs font-medium text-red-400">{{ form.name.errors|first }}</p>
+                {% endif %}
+                <p class="text-[11px] text-[var(--text-muted)]">Examples: "Upper Push &amp; Abs", "Leg Hypertrophy", "Pull Day A"</p>
+            </div>
+
+            <!-- Description -->
+            <div class="space-y-1.5">
+                <label for="id_description" class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Description / Goals (Optional)
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <p class="text-xs font-medium text-red-400">{{ form.description.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            <div class="pt-2 flex items-center gap-3">
+                <button type="submit" class="btn-gym btn-primary-gym flex-1 text-sm font-bold shadow-lg">
+                    Continue to Exercise Editor &rarr;
+                </button>
+                <a href="{% url 'workouts:plan_list' %}" class="btn-gym btn-secondary-gym px-4 text-xs font-semibold">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

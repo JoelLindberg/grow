@@ -1,0 +1,123 @@
+<!-- Inline Exercise Editor Row (HTMX Swap) -->
+<div id="exercise-row-{{ plan_exercise.id }}"
+    class="card-theme p-4 border-2 border-orange-500/60 bg-[var(--bg-surface-elevated)] space-y-4 shadow-xl">
+
+    <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Editing Exercise</span>
+            <span class="font-bold text-sm text-[var(--text-primary)]">{{ plan_exercise.exercise.name }}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-orange-950/40 text-orange-300 border border-orange-500/20">
+                {{ plan_exercise.exercise.muscle_group }}
+            </span>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'workouts:plan_exercise_edit' plan.id plan_exercise.id %}"
+        hx-post="{% url 'workouts:plan_exercise_edit' plan.id plan_exercise.id %}"
+        hx-target="#plan-exercise-list"
+        class="space-y-4"
+        x-data="{
+            sets: {{ plan_exercise.target_sets }},
+            reps: {{ plan_exercise.target_reps }},
+            weight: {% if plan_exercise.target_weight_kg %}{{ plan_exercise.target_weight_kg }}{% else %}null{% endif %},
+            rest: {{ plan_exercise.rest_seconds }}
+        }">
+        {% csrf_token %}
+        <input type="hidden" name="exercise" value="{{ plan_exercise.exercise.id }}">
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <!-- Sets -->
+            <div class="space-y-1">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
+                    Sets
+                </label>
+                <div class="flex items-center gap-1">
+                    <button type="button" @click="if (sets > 1) sets--" class="counter-btn">-</button>
+                    <input type="number" name="target_sets" x-model.number="sets" min="1" max="30"
+                        class="input-gym text-center font-bold text-base h-11 p-1">
+                    <button type="button" @click="if (sets < 30) sets++" class="counter-btn">+</button>
+                </div>
+            </div>
+
+            <!-- Reps -->
+            <div class="space-y-1">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
+                    Reps
+                </label>
+                <div class="flex items-center gap-1">
+                    <button type="button" @click="if (reps > 1) reps--" class="counter-btn">-</button>
+                    <input type="number" name="target_reps" x-model.number="reps" min="1" max="200"
+                        class="input-gym text-center font-bold text-base h-11 p-1">
+                    <button type="button" @click="if (reps < 200) reps++" class="counter-btn">+</button>
+                </div>
+            </div>
+
+            <!-- Weight (kg) / Bodyweight -->
+            <div class="space-y-1">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
+                    Weight (kg)
+                </label>
+                <div class="flex items-center gap-1">
+                    <button type="button" @click="if (weight && weight >= 2.5) weight -= 2.5; else if(weight && weight > 0) weight = 0;" class="counter-btn">-</button>
+                    <input type="number" name="target_weight_kg" x-model.number="weight" min="0" max="500" step="0.5"
+                        placeholder="Bodyweight"
+                        class="input-gym text-center font-bold text-sm h-11 p-1">
+                    <button type="button" @click="weight = (weight ? weight + 2.5 : 2.5)" class="counter-btn">+</button>
+                </div>
+            </div>
+
+            <!-- Rest (seconds) -->
+            <div class="space-y-1">
+                <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
+                    Rest (sec)
+                </label>
+                <div class="flex items-center gap-1">
+                    <button type="button" @click="if (rest >= 15) rest -= 15" class="counter-btn">-</button>
+                    <input type="number" name="rest_seconds" x-model.number="rest" min="0" max="600" step="5"
+                        class="input-gym text-center font-bold text-base h-11 p-1">
+                    <button type="button" @click="if (rest <= 585) rest += 15" class="counter-btn">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Weight and Rest Presets -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
+            <!-- Weight Quick Helpers -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[11px] text-[var(--text-muted)]">Weight:</span>
+                <button type="button" @click="weight = null"
+                    :class="!weight ? 'bg-emerald-950/70 text-emerald-300 font-bold border-emerald-500/40' : 'bg-[var(--bg-surface)] text-[var(--text-secondary)]'"
+                    class="px-2 py-0.5 rounded border border-[var(--border-subtle)] text-xs">
+                    🌱 Bodyweight
+                </button>
+                <button type="button" @click="weight = 5" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs">5kg</button>
+                <button type="button" @click="weight = 10" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs">10kg</button>
+                <button type="button" @click="weight = 15" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs">15kg</button>
+                <button type="button" @click="weight = 20" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs">20kg</button>
+            </div>
+
+            <!-- Rest Quick Helpers -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[11px] text-[var(--text-muted)]">Rest:</span>
+                <button type="button" @click="rest = 30" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs font-medium">30s</button>
+                <button type="button" @click="rest = 60" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs font-medium">60s</button>
+                <button type="button" @click="rest = 90" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs font-medium">90s</button>
+                <button type="button" @click="rest = 120" class="px-2 py-0.5 rounded bg-[var(--bg-surface)] text-xs font-medium">2m</button>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-subtle)]">
+            <button type="button"
+                hx-post="{% url 'workouts:plan_exercise_move' plan.id plan_exercise.id 'up' %}"
+                hx-target="#plan-exercise-list"
+                class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                Cancel
+            </button>
+            <button type="submit"
+                class="btn-gym btn-primary-gym h-10 px-4 text-xs font-bold shadow-md">
+                Save Exercise Changes
+            </button>
+        </div>
+    </form>
+</div>

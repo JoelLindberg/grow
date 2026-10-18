@@ -1,0 +1,161 @@
+<!-- Dynamic Exercise List (HTMX Swapped) -->
+<div id="plan-exercise-list" class="space-y-4">
+
+    <!-- Out-of-band or inline metrics recap -->
+    <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-xs">
+        <div class="flex items-center gap-4">
+            <div>
+                <span class="text-[10px] uppercase font-bold text-[var(--text-muted)]">Exercises</span>
+                <span class="font-bold text-[var(--text-primary)] ml-1">{{ exercises|length }}</span>
+            </div>
+            <div>
+                <span class="text-[10px] uppercase font-bold text-[var(--text-muted)]">Total Sets</span>
+                <span class="font-bold text-[var(--text-primary)] ml-1">{{ plan.total_sets }}</span>
+            </div>
+            <div>
+                <span class="text-[10px] uppercase font-bold text-[var(--text-muted)]">Est. Time</span>
+                <span class="font-bold text-orange-400 ml-1">~{{ plan.estimated_duration_minutes }}m</span>
+            </div>
+        </div>
+        <span class="text-[11px] text-[var(--text-muted)] hidden sm:inline">Reorder with &uarr;&darr;</span>
+    </div>
+
+    {% if exercises %}
+    <div class="space-y-3">
+        {% for pe in exercises %}
+        <div id="exercise-row-{{ pe.id }}"
+            class="card-theme p-4 transition-all relative border border-[var(--border-subtle)] hover:border-[var(--border-medium)]">
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <!-- Exercise Info -->
+                <div class="flex items-start gap-3">
+                    <!-- Order Index -->
+                    <span class="w-7 h-7 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-xs font-mono font-bold text-[var(--text-muted)] flex items-center justify-center shrink-0 mt-0.5">
+                        {{ forloop.counter }}
+                    </span>
+
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="font-bold text-base text-[var(--text-primary)]">
+                                {{ pe.exercise.name }}
+                            </h3>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--bg-surface-elevated)] text-orange-300 border border-orange-500/20">
+                                {{ pe.exercise.muscle_group }}
+                            </span>
+                        </div>
+
+                        <!-- Prescription Pills -->
+                        <div class="flex items-center gap-2 sm:gap-3 mt-1.5 text-xs flex-wrap">
+                            <span class="font-bold text-[var(--text-primary)] bg-[var(--bg-surface-elevated)] px-2.5 py-1 rounded-md border border-[var(--border-subtle)]">
+                                {{ pe.target_sets }} <span class="text-[var(--text-muted)] font-normal text-[11px]">sets</span>
+                            </span>
+                            <span class="text-[var(--text-muted)]">&times;</span>
+                            <span class="font-bold text-[var(--text-primary)] bg-[var(--bg-surface-elevated)] px-2.5 py-1 rounded-md border border-[var(--border-subtle)]">
+                                {{ pe.target_reps }} <span class="text-[var(--text-muted)] font-normal text-[11px]">reps</span>
+                            </span>
+
+                            <!-- Weight (or Bodyweight) -->
+                            {% if pe.is_bodyweight %}
+                            <span class="inline-flex items-center gap-1 font-semibold text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-500/30">
+                                <span>🌱 Bodyweight</span>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 font-bold text-orange-400 bg-[var(--bg-surface-elevated)] px-2.5 py-1 rounded-md border border-orange-500/30">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 5v14M18 5v14M2 9h4v6H2zM18 9h4v6h-4zM6 12h12" />
+                                </svg>
+                                <span>{{ pe.weight_display }}</span>
+                            </span>
+                            {% endif %}
+
+                            <span class="inline-flex items-center gap-1 text-[var(--text-secondary)] bg-[var(--bg-surface-elevated)] px-2.5 py-1 rounded-md border border-[var(--border-subtle)]">
+                                <svg class="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>{{ pe.rest_seconds }}s <span class="text-[var(--text-muted)] text-[10px]">rest</span></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Touch-friendly Controls (Min 44x44px gym targets) -->
+                <div class="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                    <!-- Move Up Button -->
+                    {% if not forloop.first %}
+                    <form method="post" action="{% url 'workouts:plan_exercise_move' plan.id pe.id 'up' %}"
+                        hx-post="{% url 'workouts:plan_exercise_move' plan.id pe.id 'up' %}"
+                        hx-target="#plan-exercise-list" class="inline m-0">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="counter-btn text-xs hover:border-[var(--border-active)]"
+                            title="Move exercise up">
+                            &uarr;
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="counter-btn opacity-20 cursor-not-allowed">&uarr;</span>
+                    {% endif %}
+
+                    <!-- Move Down Button -->
+                    {% if not forloop.last %}
+                    <form method="post" action="{% url 'workouts:plan_exercise_move' plan.id pe.id 'down' %}"
+                        hx-post="{% url 'workouts:plan_exercise_move' plan.id pe.id 'down' %}"
+                        hx-target="#plan-exercise-list" class="inline m-0">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="counter-btn text-xs hover:border-[var(--border-active)]"
+                            title="Move exercise down">
+                            &darr;
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="counter-btn opacity-20 cursor-not-allowed">&darr;</span>
+                    {% endif %}
+
+                    <!-- Edit Toggle Button (HTMX swaps row with edit form) -->
+                    <button type="button"
+                        hx-get="{% url 'workouts:plan_exercise_edit' plan.id pe.id %}"
+                        hx-target="#exercise-row-{{ pe.id }}"
+                        class="counter-btn text-xs text-orange-400 hover:border-orange-400 hover:bg-orange-500/10"
+                        title="Edit sets, reps, weight, or rest">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                    </button>
+
+                    <!-- Remove Button -->
+                    <form method="post" action="{% url 'workouts:plan_exercise_delete' plan.id pe.id %}"
+                        hx-post="{% url 'workouts:plan_exercise_delete' plan.id pe.id %}"
+                        hx-target="#plan-exercise-list"
+                        hx-confirm="Remove {{ pe.exercise.name }} from this plan?" class="inline m-0">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="counter-btn text-xs text-red-400 hover:border-red-500 hover:bg-red-950/30"
+                            title="Remove exercise">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-theme p-8 text-center space-y-3 border-dashed border-[var(--border-medium)]">
+        <div class="w-12 h-12 rounded-xl bg-orange-950/30 border border-orange-500/20 text-orange-400 flex items-center justify-center mx-auto">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-base font-bold text-[var(--text-primary)]">Plan is currently empty</h3>
+            <p class="text-xs text-[var(--text-muted)] max-w-xs mx-auto">
+                Use the "Add Exercise" builder below to choose an exercise, configure target sets/reps, and set weights.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>

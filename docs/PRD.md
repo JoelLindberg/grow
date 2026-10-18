@@ -17,7 +17,9 @@
             - Sets
             - Reps
             - Rest
-            - Supersets
+    - A workout plan is defined by a name and the exercises that make up the workout plan.
+    - There can be as many workout plans as the user wants.
+    - Workout plans can be created, edited, and deleted by the user.
 * Workout schedule **Prioritized feature**
     - Implements workout plans according to user selection
     - The user will be able to assign workout plans at recurring intervals (daily, weekly, monthly).
