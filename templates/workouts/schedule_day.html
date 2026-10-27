@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ day_name }} Schedule — GROW{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Navigation & Breadcrumbs -->
+    <div class="flex items-center justify-between gap-3">
+        <a href="{% url 'workouts:schedule' %}"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Weekly Schedule</span>
+        </a>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'workouts:schedule' %}"
+                class="btn-gym h-10 px-3.5 text-xs font-bold rounded-lg btn-secondary-gym">
+                Done
+            </a>
+        </div>
+    </div>
+
+    <!-- Day Header Card -->
+    <div class="card-theme p-5 sm:p-6 space-y-2">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Day Editor</span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                    {{ day_name }} Schedule
+                </h1>
+                <p class="text-xs sm:text-sm text-[var(--text-muted)]">
+                    {{ day_data.date|date:"l, F j, Y" }}
+                </p>
+            </div>
+            {% if day_data.is_today %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-500 text-white self-start sm:self-auto shadow-md">
+                <span class="w-2 h-2 rounded-full bg-white"></span>
+                Active Today
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs sm:text-sm flex items-center justify-between border
+            {% if message.tags == 'success' %}
+                bg-emerald-950/40 border-emerald-500/40 text-emerald-200
+            {% elif message.tags == 'error' %}
+                bg-red-950/40 border-red-500/40 text-red-200
+            {% else %}
+                bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)]
+            {% endif %}">
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Section 1: Current Scheduled Exercises for this Day -->
+    <div class="card-theme p-5 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+            <div class="flex items-center gap-2">
+                <span class="text-base">📋</span>
+                <h2 class="text-base font-bold text-[var(--text-primary)]">
+                    Scheduled on {{ day_name }}
+                </h2>
+            </div>
+            <span class="text-xs text-[var(--text-muted)]">
+                {{ day_data.total_exercises }} exercise(s) &bull; {{ day_data.total_sets }} sets
+            </span>
+        </div>
+
+        {% if day_data.has_workouts %}
+        <div class="space-y-3">
+            {% for p in day_data.workouts %}
+            <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                        <h3 class="font-extrabold text-sm sm:text-base text-[var(--text-primary)]">
+                            {{ p.workout.name }}
+                        </h3>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-950/40 text-orange-300 border border-orange-500/20">
+                        {{ p.recurrence }}
+                    </span>
+                </div>
+
+                <div class="space-y-2">
+                    {% for we in p.exercises %}
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] gap-2">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-sm text-[var(--text-primary)]">{{ we.exercise.name }}</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-stone-800 text-stone-300">
+                                    {{ we.exercise.muscle_group }}
+                                </span>
+                            </div>
+                            <div class="text-xs text-[var(--text-muted)] mt-0.5 font-mono">
+                                <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
+                                <span class="text-orange-400 font-semibold">&bull; {{ we.weight_display }}</span>
+                                <span>&bull; {{ we.rest_seconds }}s rest</span>
+                            </div>
+                        </div>
+
+                        <!-- Remove Exercise from this Day -->
+                        <form method="post" action="{% url 'workouts:schedule_day_exercise_remove' day_index we.id %}" class="inline m-0 self-end sm:self-auto">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="btn-gym h-9 px-3 text-xs font-semibold rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/30 border border-transparent hover:border-red-500/30 transition-colors"
+                                title="Remove from {{ day_name }}">
+                                Remove from Day
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] rounded-xl border border-dashed border-[var(--border-subtle)]">
+            <span class="text-2xl block mb-1">🌱</span>
+            No exercises currently scheduled for {{ day_name }}. Use the exercise selector below to add exercises.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 2: Add Exercises to this Day (User Flows steps 5 & 6) -->
+    <div class="card-theme p-5 sm:p-6 space-y-5" x-data="{
+        allSelected: false,
+        selectAll() {
+            this.allSelected = !this.allSelected;
+            document.querySelectorAll('.exercise-checkbox').forEach(cb => cb.checked = this.allSelected);
+        }
+    }">
+        <div class="space-y-1 pb-3 border-b border-[var(--border-subtle)]">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Exercise Selector</span>
+            </div>
+            <h2 class="text-lg font-bold text-[var(--text-primary)]">
+                Add Exercises to {{ day_name }}
+            </h2>
+            <p class="text-xs text-[var(--text-muted)]">
+                Filter the exercise catalog, select one or more exercises, and add them to this day's routine.
+            </p>
+        </div>
+
+        <!-- Filter Dropdown (User Flows Step 5) -->
+        <div class="space-y-2">
+            <label for="id_filter_select" class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                Filter Catalog By
+            </label>
+            <select name="filter" id="id_filter_select"
+                hx-get="{% url 'workouts:schedule_filtered_exercises' day_index %}"
+                hx-target="#filtered-exercise-container"
+                hx-swap="outerHTML"
+                class="input-gym cursor-pointer">
+                <option value="latest" {% if active_filter == 'latest' %}selected{% endif %}>
+                    ✨ Latest added exercises
+                </option>
+                <option value="oldest" {% if active_filter == 'oldest' %}selected{% endif %}>
+                    🕰️ Oldest exercises
+                </option>
+                <option value="least_scheduled" {% if active_filter == 'least_scheduled' %}selected{% endif %}>
+                    ⚠️ Least scheduled exercises (needs focus or review)
+                </option>
+                <option value="most_scheduled" {% if active_filter == 'most_scheduled' %}selected{% endif %}>
+                    🔥 Most scheduled exercises (favorites)
+                </option>
+            </select>
+        </div>
+
+        <!-- Multi-Select Add Form (User Flows Step 6) -->
+        <form method="post" action="{% url 'workouts:schedule_day_exercise_add' day_index %}" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Exercise Selection Container (HTMX Swapped by filter dropdown) -->
+            {% include "workouts/partials/schedule_filtered_exercises.html" with filtered_exercises=filtered_exercises active_filter=active_filter %}
+
+            <!-- Workout Assignment & Prescription Settings -->
+            <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Prescription &amp; Workout Target</span>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="block text-[11px] font-bold uppercase text-[var(--text-muted)]">Assign to Workout</label>
+                        {% if user_workouts %}
+                        <select name="workout_id" class="input-gym cursor-pointer">
+                            {% for workout in user_workouts %}
+                            <option value="{{ workout.id }}">{{ workout.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <input type="text" disabled value="Default: {{ day_name }} Routine" class="input-gym bg-stone-900 opacity-70">
+                        {% endif %}
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold uppercase text-[var(--text-muted)] text-center">Sets</label>
+                            <input type="number" name="target_sets" value="3" min="1" max="20" class="input-gym text-center font-bold text-sm h-11 p-1">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold uppercase text-[var(--text-muted)] text-center">Reps</label>
+                            <input type="number" name="target_reps" value="10" min="1" max="100" class="input-gym text-center font-bold text-sm h-11 p-1">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold uppercase text-[var(--text-muted)] text-center">Kg</label>
+                            <input type="number" name="target_weight_kg" placeholder="BW" step="0.5" min="0" class="input-gym text-center font-bold text-sm h-11 p-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button (Min 44x44px gym touch target) -->
+            <button type="submit" class="btn-gym btn-primary-gym w-full h-12 text-sm font-bold shadow-lg flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Selected Exercises to {{ day_name }} Schedule</span>
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

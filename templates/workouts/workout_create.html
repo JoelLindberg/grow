@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Create Workout — GROW{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6">
+
+    <!-- Back Button -->
+    <div>
+        <a href="{% url 'workouts:workout_list' %}"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Workouts</span>
+        </a>
+    </div>
+
+    <!-- Create Card -->
+    <div class="card-theme p-6 sm:p-8 space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Workout Builder</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                Create New Workout
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                Give your workout a name and optional notes. You will configure exercises, sets, reps, weight, and schedule days in the next step.
+            </p>
+        </div>
+
+        <form method="post" action="{% url 'workouts:workout_create' %}" class="space-y-5">
+            {% csrf_token %}
+
+            <div class="space-y-2">
+                <label for="{{ form.name.id_for_label }}"
+                    class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Workout Name <span class="text-orange-500">*</span>
+                </label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <p class="text-xs text-red-400">{{ form.name.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="space-y-2">
+                <label for="{{ form.description.id_for_label }}"
+                    class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                    Description / Focus (Optional)
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <p class="text-xs text-red-400">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-[var(--border-subtle)]">
+                <a href="{% url 'workouts:workout_list' %}" class="btn-gym btn-secondary-gym px-4 text-xs font-semibold">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-gym btn-primary-gym px-6 text-sm font-bold shadow-lg">
+                    Continue to Exercise Setup &rarr;
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
