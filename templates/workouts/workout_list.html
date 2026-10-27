@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Workouts — GROW{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Workout Routines</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] mt-1">
+                Workouts
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
+                Define exercises, target sets, reps, weight, and rest intervals. Assign to your weekly schedule.
+            </p>
+        </div>
+
+        <a href="{% url 'workouts:workout_create' %}"
+            class="btn-gym btn-primary-gym px-5 py-2.5 text-sm font-bold shadow-lg flex items-center justify-center gap-2 shrink-0">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Create Workout</span>
+        </a>
+    </div>
+
+    <!-- Feedback messages -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs sm:text-sm flex items-center justify-between border
+            {% if message.tags == 'success' %}
+                bg-emerald-950/40 border-emerald-500/40 text-emerald-200
+            {% elif message.tags == 'error' %}
+                bg-red-950/40 border-red-500/40 text-red-200
+            {% else %}
+                bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)]
+            {% endif %}">
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Workouts Grid / Empty State -->
+    {% if workouts %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {% for workout in workouts %}
+        <div class="card-theme p-5 sm:p-6 flex flex-col justify-between space-y-4 relative group hover:border-[var(--border-active)] transition-all">
+            <!-- Ambient Card Top Glow -->
+            <div class="space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-[var(--text-primary)] group-hover:text-orange-400 transition-colors">
+                            {{ workout.name }}
+                        </h2>
+                        {% if workout.description %}
+                        <p class="text-xs text-[var(--text-muted)] mt-1 line-clamp-2">
+                            {{ workout.description }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Duration Badge -->
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)] shrink-0">
+                        <svg class="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        ~{{ workout.estimated_duration_minutes }} min
+                    </span>
+                </div>
+
+                <!-- Workout Metrics & Targets -->
+                <div class="grid grid-cols-2 gap-2 py-2 px-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-xs">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Exercises</span>
+                        <span class="text-sm font-bold text-[var(--text-primary)]">{{ workout.exercise_count }}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] uppercase font-bold text-[var(--text-muted)] block">Total Sets</span>
+                        <span class="text-sm font-bold text-[var(--text-primary)]">{{ workout.total_sets }}</span>
+                    </div>
+                </div>
+
+                <!-- Muscle Group Badges -->
+                {% if workout.muscle_groups %}
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    {% for mg in workout.muscle_groups %}
+                    <span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-orange-950/40 text-orange-300 border border-orange-500/20">
+                        {{ mg }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-xs italic text-[var(--text-muted)]">No exercises added yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Footer Action Controls (Gym Usability) -->
+            <div class="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+                <a href="{% url 'workouts:workout_edit' workout.id %}"
+                    class="btn-gym btn-primary-gym flex-1 text-xs font-bold py-2 shadow-sm">
+                    Edit Workout &rarr;
+                </a>
+
+                <!-- Duplicate Action -->
+                <form method="post" action="{% url 'workouts:workout_duplicate' workout.id %}" class="inline m-0">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="btn-gym btn-secondary-gym h-10 px-3 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        title="Duplicate workout as new template">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                        </svg>
+                    </button>
+                </form>
+
+                <!-- Delete Action -->
+                <form method="post" action="{% url 'workouts:workout_delete' workout.id %}"
+                    onsubmit="return confirm('Are you sure you want to delete \'{{ workout.name }}\'? This cannot be undone.');"
+                    class="inline m-0">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="btn-gym h-10 px-3 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/30 border border-transparent hover:border-red-500/30 rounded-lg transition-colors"
+                        title="Delete workout">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card-theme p-8 sm:p-12 text-center space-y-4 border-dashed border-[var(--border-medium)]">
+        <div class="w-16 h-16 rounded-2xl bg-orange-950/40 border border-orange-500/30 text-orange-400 flex items-center justify-center mx-auto text-3xl">
+            🏋️
+        </div>
+        <div class="space-y-1.5 max-w-sm mx-auto">
+            <h3 class="text-lg font-bold text-[var(--text-primary)]">No Workouts Created Yet</h3>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] leading-relaxed">
+                Build your workouts (e.g., Push, Pull, Legs, Core) and assign them to your weekly schedule.
+            </p>
+        </div>
+        <div class="pt-2">
+            <a href="{% url 'workouts:workout_create' %}" class="btn-gym btn-primary-gym px-6 text-sm font-bold shadow-lg">
+                Create Your First Workout &rarr;
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

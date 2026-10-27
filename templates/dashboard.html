@@ -3,15 +3,13 @@
 {% block title %}Dashboard — GROW{% endblock %}
 
 {% block content %}
+{{ today_exercises|json_script:"today-exercises-data" }}
+
 <div class="space-y-8" x-data="{
     activeTab: 'today',
     wellRested: true,
     workoutStarted: false,
-    exercises: [
-        { id: 1, name: 'Barbell Flat Bench Press', sets: 4, reps: 8, weight: 75, completed: false },
-        { id: 2, name: 'Incline Dumbbell Press', sets: 3, reps: 10, weight: 26, completed: false },
-        { id: 3, name: 'Hanging Leg Raises', sets: 3, reps: 12, weight: 0, completed: false }
-    ],
+    exercises: JSON.parse(document.getElementById('today-exercises-data')?.textContent || '[]'),
     restTimer: 90,
     timerRunning: false,
     timerInterval: null,
@@ -72,13 +70,22 @@
                     <div>
                         <div class="flex items-center gap-2">
                             <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Today's
-                                Schedule</span>
+                            <span class="text-xs font-bold uppercase tracking-wider text-orange-400">
+                                Today's Schedule ({{ today_day_name }})
+                            </span>
                         </div>
-                        <h2 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">Upper Push &amp; Core
+                        <h2 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1">
+                            {{ today_workout_title }}
                         </h2>
-                        <p class="text-xs text-[var(--text-muted)]">3 Exercises &bull; Estimated 45 min &bull; Rest: 90s
+                        {% if today_has_workouts %}
+                        <p class="text-xs text-[var(--text-muted)]">
+                            <span x-text="exercises.length"></span> Exercises scheduled for today &bull; Rest: 90s
                         </p>
+                        {% else %}
+                        <p class="text-xs text-[var(--text-muted)]">
+                            No workout assigned for {{ today_day_name }}. Enjoy recovery or pick an ad-hoc routine.
+                        </p>
+                        {% endif %}
                     </div>
 
                     <!-- Rest Timer Widget (Zero Latency Client UI) -->
@@ -95,25 +102,34 @@
                     </div>
                 </div>
 
+                {% if today_has_workouts %}
                 <!-- Action Bar: Start / Postpone / Skip (User Flows Step 5) -->
                 <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                    <button @click="workoutStarted = !workoutStarted"
-                        class="btn-gym btn-primary-gym px-5 text-sm gap-2">
+                    <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-5 text-sm gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                 d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                         </svg>
-                        <span x-text="workoutStarted ? 'Active Workout in Progress' : 'Start Workout'">Start
-                            Workout</span>
-                    </button>
+                        <span>Start Workout</span>
+                    </a>
 
-                    <button class="btn-gym btn-secondary-gym px-4 text-xs">
-                        Postpone to Tomorrow
-                    </button>
+                    <form method="post" action="{% url 'workouts:workout_postpone' %}" class="inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-gym btn-secondary-gym px-4 text-xs">
+                            Postpone for Next Day
+                        </button>
+                    </form>
 
-                    <button class="btn-gym btn-secondary-gym px-4 text-xs text-[var(--text-muted)] hover:text-red-400">
-                        Mark Skipped
-                    </button>
+                    <form method="post" action="{% url 'workouts:workout_skip' %}" class="inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-gym btn-secondary-gym px-4 text-xs text-[var(--text-muted)] hover:text-red-400">
+                            Mark Skipped
+                        </button>
+                    </form>
+
+                    <a href="{% url 'workouts:schedule' %}" class="btn-gym btn-secondary-gym px-4 text-xs ml-auto">
+                        View Schedule
+                    </a>
                 </div>
 
                 <!-- Workout Exercise List with Gym Counters (User Flows Steps 6-8) -->
@@ -146,10 +162,9 @@
                                             :class="{ 'line-through text-[var(--text-muted)]': ex.completed }"
                                             x-text="ex.name"></h4>
                                         <p class="text-xs text-[var(--text-muted)]">
-                                            <span x-text="ex.sets"></span> sets &times; <span x-text="ex.reps"></span>
-                                            reps
-                                            <span x-show="ex.weight > 0"> &bull; <span x-text="ex.weight"></span>
-                                                kg</span>
+                                            <span x-text="ex.sets"></span> sets &times; <span x-text="ex.reps"></span> reps
+                                            <span x-show="ex.weight > 0"> &bull; <span x-text="ex.weight"></span> kg</span>
+                                            <span x-show="ex.weight == 0"> &bull; 🌱 Bodyweight</span>
                                         </p>
                                     </div>
                                 </div>
@@ -174,7 +189,7 @@
                                 <!-- Weight Controller -->
                                 <div class="flex items-center gap-2">
                                     <span class="text-[var(--text-muted)] font-medium">Kg:</span>
-                                    <button @click="if (ex.weight >= 2.5) ex.weight -= 2.5"
+                                    <button @click="if (ex.weight >= 2.5) ex.weight -= 2.5; else if(ex.weight > 0) ex.weight = 0;"
                                         class="counter-btn w-8 h-8 text-sm">-</button>
                                     <span class="w-10 text-center font-bold text-sm" x-text="ex.weight"></span>
                                     <button @click="ex.weight += 2.5" class="counter-btn w-8 h-8 text-sm">+</button>
@@ -186,34 +201,80 @@
 
                 <!-- Complete Workout Button -->
                 <div class="pt-2">
-                    <button
-                        class="btn-gym w-full bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-orange-500 text-[var(--text-primary)] font-bold text-sm transition-all"
-                        :class="{ 'btn-primary-gym border-none': exercises.every(e => e.completed) }">
-                        Save Workout Session &amp; Sync
-                    </button>
+                    <a href="{% url 'workouts:workout_today' %}"
+                        class="btn-gym w-full bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-orange-500 text-[var(--text-primary)] font-bold text-sm transition-all flex items-center justify-center gap-2">
+                        <span>Open Workout Session &amp; Log Results &rarr;</span>
+                    </a>
                 </div>
+                {% else %}
+                <!-- Empty / Rest Day State -->
+                <div class="p-6 rounded-xl bg-[var(--bg-surface-elevated)] border border-dashed border-[var(--border-subtle)] text-center space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-orange-950/40 border border-orange-500/20 text-orange-400 flex items-center justify-center mx-auto text-2xl">
+                        🌱
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-base font-bold text-[var(--text-primary)]">Rest &amp; Mindfulness Day</h3>
+                        <p class="text-xs text-[var(--text-muted)] max-w-sm mx-auto leading-relaxed">
+                            "Cultivating a strong body and mind creates the foundation necessary to be kind." Recover your muscles, reflect, and prepare for upcoming workouts.
+                        </p>
+                    </div>
+                    <div class="pt-2 flex items-center justify-center gap-3">
+                        <a href="{% url 'workouts:schedule' %}" class="btn-gym btn-primary-gym h-10 px-4 text-xs font-bold">
+                            Open Weekly Schedule &rarr;
+                        </a>
+                        <a href="{% url 'workouts:workout_list' %}" class="btn-gym btn-secondary-gym h-10 px-4 text-xs font-semibold">
+                            Browse Workouts
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Column 3: Nutrition & Mindful Rest (PRD Features) -->
+        <!-- Column 3: Schedule, Nutrition & Mindful Rest -->
         <div class="space-y-6">
 
-            <!-- Workout Blueprints / Plans Card -->
+            <!-- Weekly Schedule Widget (Prioritized Feature Shortcut) -->
+            <div class="card-theme p-5 space-y-4 border border-orange-500/20">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">📅</span>
+                        <h3 class="font-bold text-sm text-[var(--text-primary)]">Workout Schedule</h3>
+                    </div>
+                    <a href="{% url 'workouts:schedule' %}" class="text-xs font-semibold text-orange-400 hover:text-orange-300">
+                        View Week &rarr;
+                    </a>
+                </div>
+
+                <p class="text-xs text-[var(--text-muted)] leading-relaxed">
+                    Plan daily and weekly splits with mobile-first calendar overview.
+                </p>
+
+                <a href="{% url 'workouts:schedule' %}"
+                    class="btn-gym w-full h-10 text-xs font-bold btn-primary-gym rounded-lg flex items-center justify-center gap-2 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Manage Workout Schedule</span>
+                </a>
+            </div>
+
+            <!-- Workouts Card -->
             <div class="card-theme p-5 space-y-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="text-base">📋</span>
-                        <h3 class="font-bold text-sm text-[var(--text-primary)]">Workout Blueprints</h3>
+                        <h3 class="font-bold text-sm text-[var(--text-primary)]">Workouts</h3>
                     </div>
-                    <a href="{% url 'workouts:plan_create' %}" class="text-xs font-semibold text-orange-400 hover:text-orange-300">
+                    <a href="{% url 'workouts:workout_create' %}" class="text-xs font-semibold text-orange-400 hover:text-orange-300">
                         + New
                     </a>
                 </div>
 
-                {% if workout_plans %}
+                {% if workouts %}
                 <div class="space-y-2">
-                    {% for p in workout_plans|slice:":3" %}
-                    <a href="{% url 'workouts:plan_edit' p.id %}"
+                    {% for p in workouts|slice:":3" %}
+                    <a href="{% url 'workouts:workout_edit' p.id %}"
                         class="block p-2.5 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-orange-500/50 transition-colors">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-bold text-[var(--text-primary)]">{{ p.name }}</span>
@@ -224,13 +285,13 @@
                 </div>
                 {% else %}
                 <p class="text-xs text-[var(--text-muted)]">
-                    No workout plans created yet. Build daily plans to organize your routine.
+                    No workouts created yet. Build daily workouts to organize your routine.
                 </p>
                 {% endif %}
 
-                <a href="{% url 'workouts:plan_list' %}"
+                <a href="{% url 'workouts:workout_list' %}"
                     class="btn-gym w-full h-10 text-xs font-bold btn-secondary-gym rounded-lg">
-                    Manage All Plans
+                    Manage All Workouts
                 </a>
             </div>
 

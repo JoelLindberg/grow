@@ -1,0 +1,175 @@
+<!-- Weekly Schedule Overview (Vertical Workflow for Mobile-First Usability) -->
+<div id="weekly-overview-container" class="space-y-4">
+
+    <!-- Week Start Preference Toggle Bar (PRD: switch between Mon-Sun and Sun-Sat) -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)]">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Week Structure</span>
+            <span class="text-xs font-bold text-orange-400 capitalize">
+                {{ profile.get_week_start_day_display }}
+            </span>
+        </div>
+
+        <!-- Toggle Buttons -->
+        <div class="flex items-center gap-1.5 self-start sm:self-auto">
+            <span class="text-[11px] text-[var(--text-muted)] mr-1">Start on:</span>
+            <form method="post" action="{% url 'workouts:schedule_week_start' %}"
+                hx-post="{% url 'workouts:schedule_week_start' %}"
+                hx-target="#weekly-overview-container"
+                hx-swap="outerHTML"
+                class="inline m-0">
+                {% csrf_token %}
+                <input type="hidden" name="week_start_day" value="monday">
+                <button type="submit"
+                    class="h-8 px-3 rounded-lg text-xs font-bold transition-all border
+                        {% if profile.week_start_day == 'monday' %}
+                            bg-orange-500 text-white border-orange-400 shadow-sm
+                        {% else %}
+                            bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-subtle)] hover:text-[var(--text-primary)]
+                        {% endif %}">
+                    Monday
+                </button>
+            </form>
+
+            <form method="post" action="{% url 'workouts:schedule_week_start' %}"
+                hx-post="{% url 'workouts:schedule_week_start' %}"
+                hx-target="#weekly-overview-container"
+                hx-swap="outerHTML"
+                class="inline m-0">
+                {% csrf_token %}
+                <input type="hidden" name="week_start_day" value="sunday">
+                <button type="submit"
+                    class="h-8 px-3 rounded-lg text-xs font-bold transition-all border
+                        {% if profile.week_start_day == 'sunday' %}
+                            bg-orange-500 text-white border-orange-400 shadow-sm
+                        {% else %}
+                            bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-subtle)] hover:text-[var(--text-primary)]
+                        {% endif %}">
+                    Sunday
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7-Day Vertical Mobile-First Schedule List -->
+    <div class="space-y-4">
+        {% for day in week_days_data %}
+        <div id="day-card-{{ day.day_index }}"
+            class="card-theme p-4 sm:p-5 transition-all relative border
+                {% if day.is_today %}
+                    border-orange-500/80 bg-[var(--bg-surface-elevated)] ring-1 ring-orange-500/50 shadow-xl
+                {% else %}
+                    border-[var(--border-subtle)] hover:border-[var(--border-medium)]
+                {% endif %}">
+
+            <!-- Day Header & Status -->
+            <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-lg bg-[var(--bg-surface-glass)] border border-[var(--border-subtle)] flex items-center justify-center text-xs font-bold text-orange-400 font-mono">
+                        {{ day.day_abbr }}
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base sm:text-lg font-extrabold text-[var(--text-primary)]">
+                                {{ day.day_name }}
+                            </h3>
+                            {% if day.is_today %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-orange-500 text-white animate-pulse">
+                                <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                Today
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)]">
+                            {{ day.date|date:"l, M j, Y" }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action: Open Day Schedule Editor (Min 44x44px gym touch target) -->
+                <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                    class="btn-gym h-11 px-3.5 text-xs font-bold rounded-xl btn-secondary-gym flex items-center gap-1.5 shrink-0 hover:border-orange-500/50"
+                    title="Edit {{ day.day_name }} schedule">
+                    <svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Edit Day</span>
+                </a>
+            </div>
+
+            <!-- Scheduled Workouts / Content -->
+            <div class="pt-3 space-y-3">
+                {% if day.has_workouts %}
+                    {% for p in day.workouts %}
+                    <div class="p-3.5 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-2">
+                        <!-- Workout Title (Visible in calendar view as per PRD/User Flows) -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                                <h4 class="font-extrabold text-sm sm:text-base text-[var(--text-primary)]">
+                                    {{ p.workout.name }}
+                                </h4>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-950/40 text-orange-300 border border-orange-500/20">
+                                {{ p.recurrence }}
+                            </span>
+                        </div>
+
+                        <!-- Finer text displaying exercises with sets, reps, weight (PRD/User Flows requirement) -->
+                        <div class="space-y-1.5 pt-1 border-t border-[var(--border-subtle)] text-xs">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                                Planned Exercises:
+                            </span>
+                            <ul class="space-y-1.5">
+                                {% for we in p.exercises %}
+                                <li class="flex flex-col sm:flex-row sm:items-center justify-between text-xs py-1 px-2 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)]">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-[var(--text-primary)]">{{ we.exercise.name }}</span>
+                                        <span class="text-[10px] px-1.5 py-0.2 rounded bg-stone-800 text-stone-300">
+                                            {{ we.exercise.muscle_group }}
+                                        </span>
+                                    </div>
+                                    <div class="text-[11px] text-[var(--text-secondary)] font-mono font-medium flex items-center gap-1.5 mt-0.5 sm:mt-0">
+                                        <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
+                                        <span class="text-orange-400">&bull; {{ we.weight_display }}</span>
+                                        <span class="text-[var(--text-muted)]">({{ we.rest_seconds }}s rest)</span>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Day Summary metrics -->
+                    <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-1 px-1">
+                        <span>{{ day.total_exercises }} exercise(s) &bull; {{ day.total_sets }} total sets</span>
+                        <a href="{% url 'workouts:schedule_day' day.day_index %}" class="text-orange-400 hover:text-orange-300 font-semibold">
+                            + Add more exercises
+                        </a>
+                    </div>
+                {% else %}
+                    <!-- Rest Day / Empty State -->
+                    <div class="p-4 rounded-xl bg-[var(--bg-surface)] border border-dashed border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🌱</span>
+                            <div>
+                                <span class="font-bold text-[var(--text-primary)]">Rest &amp; Recovery Day</span>
+                                <p class="text-[11px] text-[var(--text-muted)]">
+                                    "A strong body and mind to be kind." Mindful muscle recovery and nutrition focus.
+                                </p>
+                            </div>
+                        </div>
+                        <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                            class="btn-gym h-9 px-3 text-xs font-bold rounded-lg btn-secondary-gym self-start sm:self-auto hover:border-orange-500/40">
+                            + Schedule Workout
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+</div>

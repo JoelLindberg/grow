@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Workout Schedule — GROW{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header & Breadcrumb -->
+    <div class="space-y-2">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Gym Routine</span>
+            </div>
+            <a href="{% url 'workouts:workout_list' %}"
+                class="btn-gym h-10 px-3.5 text-xs font-semibold rounded-lg btn-secondary-gym">
+                📋 Workouts
+            </a>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                    Weekly Workout Schedule
+                </h1>
+                <p class="text-xs sm:text-sm text-[var(--text-muted)]">
+                    Assign workouts and exercises across days. Select any day to customize its routine.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs sm:text-sm flex items-center justify-between border
+            {% if message.tags == 'success' %}
+                bg-emerald-950/40 border-emerald-500/40 text-emerald-200
+            {% elif message.tags == 'error' %}
+                bg-red-950/40 border-red-500/40 text-red-200
+            {% else %}
+                bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)] text-[var(--text-primary)]
+            {% endif %}">
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Recurring Workout Assignment Accordion (PRD: assign workouts at recurring intervals: daily, weekly, monthly) -->
+    <div class="card-theme p-4 sm:p-5 space-y-4" x-data="{ showAssignForm: false }">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-lg">🔁</span>
+                <div>
+                    <h3 class="text-sm font-bold text-[var(--text-primary)]">Recurring Workout Assignments</h3>
+                    <p class="text-[11px] text-[var(--text-muted)]">
+                        Automatically assign a full workout at recurring intervals (daily, weekly, monthly).
+                    </p>
+                </div>
+            </div>
+
+            <button type="button" @click="showAssignForm = !showAssignForm"
+                class="btn-gym h-10 px-3 text-xs font-bold rounded-lg btn-secondary-gym shrink-0"
+                x-text="showAssignForm ? 'Close' : '+ Assign Workout'">
+                + Assign Workout
+            </button>
+        </div>
+
+        <!-- Assignment Form -->
+        <div x-show="showAssignForm" x-transition style="display: none;" class="pt-3 border-t border-[var(--border-subtle)] space-y-4">
+            {% if user_workouts %}
+            <form method="post" action="{% url 'workouts:schedule_workout_assign' %}" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                {% csrf_token %}
+                <div class="space-y-1 sm:col-span-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Workout</label>
+                    <select name="workout" required class="input-gym cursor-pointer">
+                        {% for workout in user_workouts %}
+                        <option value="{{ workout.id }}">{{ workout.name }} ({{ workout.exercise_count }} exercises)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Day of Week</label>
+                    <select name="day_of_week" required class="input-gym cursor-pointer">
+                        <option value="0">Monday</option>
+                        <option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option>
+                        <option value="3">Thursday</option>
+                        <option value="4">Friday</option>
+                        <option value="5">Saturday</option>
+                        <option value="6">Sunday</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Interval</label>
+                    <select name="recurrence" required class="input-gym cursor-pointer">
+                        <option value="weekly">Weekly (Every week on this day)</option>
+                        <option value="daily">Daily (Every day)</option>
+                        <option value="monthly">Monthly (Same day each month)</option>
+                    </select>
+                </div>
+
+                <div class="sm:col-span-4 flex justify-end">
+                    <button type="submit" class="btn-gym btn-primary-gym h-10 px-5 text-xs font-bold shadow-md">
+                        Confirm Assignment
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="text-xs text-[var(--text-muted)] p-3 bg-[var(--bg-surface-elevated)] rounded-lg flex items-center justify-between">
+                <span>You don't have any workouts created yet.</span>
+                <a href="{% url 'workouts:workout_create' %}" class="text-orange-400 font-bold hover:underline">
+                    Create a Workout first &rarr;
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Active Recurring Schedules List -->
+            {% if recurring_schedules %}
+            <div class="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Active Recurring Rules</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {% for rule in recurring_schedules %}
+                    <div class="p-2.5 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-between text-xs">
+                        <div>
+                            <span class="font-bold text-[var(--text-primary)]">{{ rule.workout.name }}</span>
+                            <span class="text-[var(--text-muted)] block text-[11px]">
+                                {{ rule.get_recurrence_display }} on {{ rule.get_day_of_week_display }}
+                            </span>
+                        </div>
+                        <form method="post" action="{% url 'workouts:schedule_assignment_delete' rule.id %}" class="inline m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-400 hover:text-red-300 px-2 py-1 text-xs" title="Delete rule">
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Weekly Schedule Overview Partial (Supports HTMX week start toggle swap) -->
+    {% include "workouts/partials/schedule_week_overview.html" with profile=profile week_days_data=week_days_data %}
+
+</div>
+{% endblock %}

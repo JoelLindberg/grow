@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Workout History — GROW{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                <span class="text-xs font-bold uppercase tracking-wider text-orange-400">Activity Log</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)] mt-1">
+                Workout History
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
+                Past workout sessions, completion results, well-rested status, and notes.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-4 py-2 text-xs font-bold shadow-sm">
+                Today's Workout &rarr;
+            </a>
+            <a href="{% url 'workouts:workout_list' %}" class="btn-gym btn-secondary-gym px-4 py-2 text-xs font-semibold">
+                Workouts
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats Bar -->
+    <div class="grid grid-cols-3 gap-3">
+        <div class="card-theme p-4 text-center">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">Completed</span>
+            <span class="text-xl sm:text-2xl font-extrabold text-[var(--text-primary)] mt-1 block">{{ total_completed }}</span>
+        </div>
+        <div class="card-theme p-4 text-center border-emerald-500/20">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">Well Rested</span>
+            <span class="text-xl sm:text-2xl font-extrabold text-emerald-300 mt-1 block">{{ well_rested_count }}</span>
+        </div>
+        <div class="card-theme p-4 text-center border-amber-500/20">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Rest Advised</span>
+            <span class="text-xl sm:text-2xl font-extrabold text-amber-300 mt-1 block">{{ needs_rest_count }}</span>
+        </div>
+    </div>
+
+    <!-- Logs List -->
+    {% if logs %}
+    <div class="space-y-4">
+        {% for log in logs %}
+        <div class="card-theme p-5 sm:p-6 space-y-4 border border-[var(--border-subtle)] hover:border-[var(--border-medium)] transition-all">
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h2 class="text-lg font-bold text-[var(--text-primary)]">{{ log.workout_name }}</h2>
+                        <!-- Status Badge -->
+                        {% if log.status == 'completed' %}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-500/30">
+                                Completed
+                            </span>
+                        {% elif log.status == 'postponed' %}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/50 text-amber-300 border border-amber-500/30">
+                                Postponed
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-950/50 text-red-300 border border-red-500/30">
+                                Skipped
+                            </span>
+                        {% endif %}
+
+                        <!-- Well Rested vs Needs Rest Guide Badge -->
+                        {% if log.status == 'completed' %}
+                            {% if log.well_rested %}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-950/30 text-emerald-400 border border-emerald-500/20">
+                                ⚡ Well Rested
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-amber-950/30 text-amber-400 border border-amber-500/20">
+                                😴 Fatigue Logged &bull; Extra rest recommended
+                            </span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <p class="text-xs text-[var(--text-muted)]">
+                        {{ log.date|date:"l, F j, Y" }} &bull; Logged {{ log.completed_at|timesince }} ago
+                    </p>
+                </div>
+
+                {% if log.all_goals_completed %}
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 shrink-0">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>All Goals Completed</span>
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- Notes -->
+            {% if log.notes %}
+            <div class="p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] italic">
+                "{{ log.notes }}"
+            </div>
+            {% endif %}
+
+            <!-- Exercise Snapshot -->
+            {% if log.exercise_data %}
+            <div class="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Exercises Logged</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {% for item in log.exercise_data %}
+                    <div class="p-2.5 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="{% if item.completed %}text-emerald-400 font-bold{% else %}text-stone-500{% endif %}">
+                                {% if item.completed %}✓{% else %}○{% endif %}
+                            </span>
+                            <span class="font-semibold text-[var(--text-primary)]">{{ item.name }}</span>
+                        </div>
+                        <span class="text-[11px] font-mono text-[var(--text-muted)]">
+                            {{ item.sets }} &times; {{ item.reps }}
+                            {% if item.weight > 0 %}&bull; {{ item.weight }}kg{% else %}&bull; BW{% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card-theme p-10 text-center space-y-3 border-dashed border-[var(--border-medium)]">
+        <span class="text-3xl block">📜</span>
+        <h3 class="text-base font-bold text-[var(--text-primary)]">No workout logs yet</h3>
+        <p class="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
+            When you complete, postpone, or skip scheduled workouts, they will be tracked here with your recovery feedback.
+        </p>
+        <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-5 py-2 text-xs font-bold inline-block shadow">
+            Check Today's Workout &rarr;
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

@@ -21,9 +21,9 @@ Intended usage workflow for performing a workout:
 
 Intended usage workflow for editing a workout:
 1. Login
-2. Navigate to the workout plans view
-3. Click on create workout plan or Select a existing workout plan (if any) to edit
-4. Edit the workout plan
+2. Navigate to the **Workouts** view
+3. Click on create `Workout` or Select an existing `Workout` (if any) to edit
+4. Edit the `Workout`
     * Add exercises
         * Select an exercise from the exercise database
         * Set the number of sets
@@ -31,6 +31,7 @@ Intended usage workflow for editing a workout:
         * Set the rest time between sets (optional) default 60 seconds
         * Set the weight (optional) if not set, then the exercise is bodyweight
         * Click on add exercise
+        * Select days of the week for the exercise to be scheduled on (this will update the calendar view). It should be a multi select. It should allow multiple exercises on a single day so that morning and evening splits are possible. A user could for example select Monday for "Bench Press" and also Monday for "Squat" resulting in two exercises on Monday.
     * Remove exercises
         * Click on remove exercise
     * Edit exercises
@@ -39,8 +40,20 @@ Intended usage workflow for editing a workout:
         * Change the number of reps per set
         * Change the rest time between sets
         * Change the weight
+        * Change the days of the week for the exercise to be scheduled on (this will update the calendar view). Exactly the same ui as when adding an exercise.
         * Click on save exercise
-5. Save the workout plan
+5. Save the `Workout`
+
+## Workout Schedule
+
+1. Login
+2. Click on the Schedule link in the navbar
+3. You will see a calendar view of your workouts for the week. The title of the workout should be visible in the calendar view for each day. In finer text also display the exercises that make up the `Workout`. Also show the number of sets, reps and weight for each exercise.
+4. You can click on one of the days to edit the schedule for that day.
+5. You should be presented with a drop down which allows you to select to filter on: the latest added exercises, the oldest exercises, the least scheduled exercises (because either it's an exercises that you need to implement more often or it should be removed) and the most scheduled exercises (to be able to find your favorites).
+6. You will then be able to select one or more of the exercises and click add, which will add them to the current schedule for the selected day.
+
+
 
 ## User Invitation & Onboarding (Invite-Only)
 Intended workflow for inviting a new member:

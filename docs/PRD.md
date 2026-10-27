@@ -11,18 +11,23 @@
 
 ## MVP Features
 
-### 1. Workout plans
-* Defines structure of a workout
+### 1. Workout Planning
+
+* Defines thestructure of a `Workout`
     - Exercise
-            - Sets
-            - Reps
-            - Rest
-    - A workout plan is defined by a name and the exercises that make up the workout plan.
-    - There can be as many workout plans as the user wants.
-    - Workout plans can be created, edited, and deleted by the user.
-* Workout schedule **Prioritized feature**
-    - Implements workout plans according to user selection
-    - The user will be able to assign workout plans at recurring intervals (daily, weekly, monthly).
+        - Sets
+        - Reps
+        - Rest
+    - A `Workout` is defined by a name and the exercises that make up the `Workout`.
+    - There can be as many `Workouts` as the user wants.
+    - `Workouts` can be created, edited, and deleted by the user.
+* `Schedule` **Prioritized feature**
+    - Implements `Workouts` according to user selection
+    - The user will be able to assign `Workouts` at recurring intervals (daily, weekly, monthly).
+    - The `Schedule` is a major feature and might later extend to be used for the plant based meal planning as well.
+    - The user should be able to see an overview of one week of the schedule.
+    - The overview should be based on a vertical workflow in order to fit the mobile first approach.
+    - The user should be able to change the preferred start of the week (e.g. Monday - Sunday or Sunday - Saturday). This is done in the user profile settings. Use Monday as the default.
 * Workout result tracking **Prioritized feature**
     - Tracks results of workouts
         - If all goals were completed or not
@@ -43,6 +48,3 @@
     - Time-limited validity (e.g., expires after 48–72 hours).
     - Single-use policy: token is invalidated immediately upon successful registration.
     - Bound to the invited email address.
-
-
-

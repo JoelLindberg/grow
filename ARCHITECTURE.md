@@ -117,19 +117,17 @@ Unlike decoupled token architectures, Django provides full relational integrity,
 
 ```mermaid
 erDiagram
-    User ||--o{ WorkoutPlan : owns
+    User ||--o{ Workout : owns
     User ||--o{ WorkoutSchedule : schedules
-    User ||--o{ WorkoutSession : logs
+    User ||--o{ WorkoutLog : logs
     User ||--o{ MealPlan : creates
     User ||--o{ UserInvitation : invites
 
-    WorkoutPlan ||--o{ PlanExercise : contains
-    Exercise ||--o{ PlanExercise : defines
+    Workout ||--o{ WorkoutExercise : contains
+    Workout ||--o{ WorkoutSchedule : assigned_to
+    Exercise ||--o{ WorkoutExercise : defines
+    Workout ||--o{ WorkoutLog : references
     
-    WorkoutSession ||--o{ LoggedExercise : records
-    LoggedExercise ||--o{ LoggedSet : tracks
-    Exercise ||--o{ LoggedExercise : references
-
     FoodItem ||--o{ MealItem : includes
     MealPlan ||--o{ MealItem : contains
     FoodItem ||--|| AminoAcidProfile : provides
@@ -157,27 +155,47 @@ erDiagram
         string description
     }
 
-    WorkoutPlan {
+    Workout {
         int id PK
         int user_id FK
         string name
         string description
     }
 
-    PlanExercise {
+    WorkoutExercise {
         int id PK
-        int plan_id FK
+        int workout_id FK
         int exercise_id FK
         int target_sets
         int target_reps
+        decimal target_weight_kg
         int rest_seconds
+        json scheduled_days
         int order
     }
 
-    WorkoutSession {
+    WorkoutSchedule {
         int id PK
         int user_id FK
+        int workout_id FK
+        int day_of_week
+        string recurrence
+        bool is_active
+    }
+
+    WorkoutLog {
+        int id PK
+        int user_id FK
+        int workout_id FK
+        string workout_name
+        date date
+        string status
+        bool all_goals_completed
+        bool well_rested
+        string notes
+        json exercise_data
         datetime completed_at
+    }
         boolean well_rested
         string notes
     }
