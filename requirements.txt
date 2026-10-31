@@ -1,5 +1,6 @@
 django>=5.1,<5.2
 django-htmx>=1.21
+PyMySQL>=1.1
 
-# Production-only (requires MariaDB client libraries to build):
+# Optional C-extension driver (used automatically if installed):
 # mysqlclient>=2.2

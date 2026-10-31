@@ -31,6 +31,10 @@ For development, always use a python virtual environment. Don't use the system p
 ## Command Cheatsheet
 
 ```bash
+# Start / stop local MariaDB 11.4 container (via Colima / Docker Compose)
+docker compose up -d
+docker compose down
+
 # Start development server
 python manage.py runserver
 

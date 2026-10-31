@@ -11,6 +11,28 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def load_dotenv(env_file):
+    """
+    Load environment variables from a .env file if it exists.
+    Existing environment variables in os.environ take precedence.
+    """
+    if not env_file.exists():
+        return
+    with open(env_file, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("'").strip('"')
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_dotenv(BASE_DIR / ".env")
+
 # SECURITY WARNING: keep the secret key used in production secret!
 # In production, set this via the DJANGO_SECRET_KEY environment variable.
 SECRET_KEY = os.environ.get(
@@ -21,7 +43,11 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 
 # ---------------------------------------------------------------------------
@@ -80,30 +106,34 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 # ---------------------------------------------------------------------------
+# Uses MariaDB 11.4 when DB_ENGINE="mariadb" (set in .env for local dev & prod)
+# or when DB_HOST is provided. Falls back to SQLite when DB_ENGINE="sqlite"
+# or when no database environment variables are configured (e.g., lightweight CI).
 
-# Default: SQLite for local development (zero setup required).
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite").lower()
+
+if DB_ENGINE in ("mariadb", "mysql") or (DB_ENGINE != "sqlite" and os.environ.get("DB_HOST")):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": os.environ.get("DB_NAME", "grow"),
+            "USER": os.environ.get("DB_USER", "grow"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+            "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+            "PORT": os.environ.get("DB_PORT", "3306"),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
     }
-}
-
-# Production: MariaDB 11.4 — uncomment and configure via environment variables.
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.mysql",
-#         "NAME": os.environ.get("DB_NAME", "grow"),
-#         "USER": os.environ.get("DB_USER", "grow"),
-#         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-#         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
-#         "PORT": os.environ.get("DB_PORT", "3306"),
-#         "OPTIONS": {
-#             "charset": "utf8mb4",
-#             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
-#         },
-#     }
-# }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # ---------------------------------------------------------------------------

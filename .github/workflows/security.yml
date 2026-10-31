@@ -25,8 +25,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   django-tests:
-    name: Django System Check & Tests
+    name: Django System Check & Tests (MariaDB 11.4)
     runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: rootpassword
+          MARIADB_DATABASE: grow
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_ENGINE: mariadb
+      DB_NAME: grow
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
