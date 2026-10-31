@@ -31,7 +31,16 @@ def load_dotenv(env_file):
                 os.environ[key] = value
 
 
-load_dotenv(BASE_DIR / ".env")
+# Determine environment file location:
+# If ENV_FILE is set in the environment (e.g., via host provider web UI), use it.
+# Otherwise, fall back to BASE_DIR / ".env" for standard local development.
+env_file_env = os.environ.get("ENV_FILE")
+if env_file_env:
+    env_file = Path(env_file_env).expanduser().resolve()
+else:
+    env_file = BASE_DIR / ".env"
+
+load_dotenv(env_file)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # In production, set this via the DJANGO_SECRET_KEY environment variable.
@@ -167,7 +176,22 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Configurable static collection root:
+# In production with Passenger where `public` is the web document root, set
+# `STATIC_ROOT=public/static` (or an absolute path) in .env so `collectstatic`
+# places assets directly where the web server serves them at line rate.
+# Defaults to `BASE_DIR / "staticfiles"`.
+static_root_env = os.environ.get("STATIC_ROOT")
+if static_root_env:
+    static_root_path = Path(static_root_env).expanduser()
+    STATIC_ROOT = (
+        static_root_path.resolve()
+        if static_root_path.is_absolute()
+        else (BASE_DIR / static_root_path).resolve()
+    )
+else:
+    STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 # ---------------------------------------------------------------------------
