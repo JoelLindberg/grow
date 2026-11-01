@@ -8,6 +8,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -42,19 +44,33 @@ else:
 
 load_dotenv(env_file)
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# In production, set this via the DJANGO_SECRET_KEY environment variable.
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-dev-only-change-me-in-production",
-)
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
+# Defaults to False in all cases; must be explicitly enabled via DJANGO_DEBUG=True in .env.
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
 
+# SECURITY WARNING: keep the secret key used in production secret!
+# Must be explicitly set to a strong key whenever DEBUG is False.
+INSECURE_SECRET_KEY_PREFIXES = (
+    "django-insecure-",
+    "replace-with-",
+    "change-me",
+)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY or (
+    not DEBUG and SECRET_KEY.startswith(INSECURE_SECRET_KEY_PREFIXES)
+):
+    if DEBUG:
+        SECRET_KEY = "django-insecure-dev-only-change-me-in-production"
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set to a secure production value when DJANGO_DEBUG is False."
+        )
+
+# Defaults to empty list when not set. When DEBUG=False, Django refuses requests
+# unless DJANGO_ALLOWED_HOSTS is explicitly configured.
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
     if host.strip()
 ]
 
@@ -66,6 +82,18 @@ CSRF_TRUSTED_ORIGINS = [
     for origin in csrf_trusted_origins_env.split(",")
     if origin.strip()
 ]
+
+# Security & Cookie Defaults (secure-by-default when DEBUG=False)
+SESSION_COOKIE_SECURE = os.environ.get(
+    "DJANGO_SESSION_COOKIE_SECURE", str(not DEBUG)
+).lower() in ("true", "1", "yes")
+CSRF_COOKIE_SECURE = os.environ.get(
+    "DJANGO_CSRF_COOKIE_SECURE", str(not DEBUG)
+).lower() in ("true", "1", "yes")
+SESSION_COOKIE_HTTPONLY = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 
 
 # ---------------------------------------------------------------------------
@@ -124,13 +152,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 # ---------------------------------------------------------------------------
-# Uses MariaDB 11.4 when DB_ENGINE="mariadb" (set in .env for local dev & prod)
-# or when DB_HOST is provided. Falls back to SQLite when DB_ENGINE="sqlite"
-# or when no database environment variables are configured (e.g., lightweight CI).
+# Uses MariaDB 11.4 by default for both production and local development.
+# SQLite is only used if explicitly requested via DB_ENGINE="sqlite".
 
-DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite").lower()
+DB_ENGINE = os.environ.get("DB_ENGINE", "mariadb").lower()
 
-if DB_ENGINE in ("mariadb", "mysql") or (DB_ENGINE != "sqlite" and os.environ.get("DB_HOST")):
+if DB_ENGINE != "sqlite":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
