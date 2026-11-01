@@ -141,7 +141,6 @@ if DB_ENGINE in ("mariadb", "mysql") or (DB_ENGINE != "sqlite" and os.environ.ge
             "PORT": os.environ.get("DB_PORT", "3306"),
             "OPTIONS": {
                 "charset": "utf8mb4",
-                "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         }
     }
