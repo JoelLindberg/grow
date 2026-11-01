@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     command:
       - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+      - --collation-server=utf8mb4_uca1400_ai_ci
     environment:
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-growrootpassword}
       MARIADB_DATABASE: ${DB_NAME:-grow}
