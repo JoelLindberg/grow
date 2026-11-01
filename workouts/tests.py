@@ -37,7 +37,8 @@ class IndexPageTests(TestCase):
         self.assertIn("If you are strong, you have to be", content)
         self.assertIn("theme.css", content)
         self.assertIn("grow_season", content)
-        self.assertIn("Autumn Palette: Oak, Maple &amp; Pumpkin", content)
+        self.assertIn("Alpha", content)
+        self.assertIn("v0.1-alpha", content)
 
 
 class HomeExerciseDatabaseTests(TestCase):

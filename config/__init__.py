@@ -1,5 +1,7 @@
 import sys
 
+__version__ = "0.1-alpha"
+
 # Register PyMySQL as MySQLdb if the compiled C-extension (mysqlclient) is not installed.
 # This allows connecting to MariaDB 11.4 without requiring C build tools on macOS or restricted hosts.
 try:
