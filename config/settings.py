@@ -58,6 +58,15 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+# CSRF Trusted Origins (comma-separated list of origins with scheme, e.g. https://your-domain.com)
+# Required in Django 4.0+ for POST/PUT requests over HTTPS.
+csrf_trusted_origins_env = os.environ.get("CSRF_TRUSTED_ORIGINS") or os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in csrf_trusted_origins_env.split(",")
+    if origin.strip()
+]
+
 
 # ---------------------------------------------------------------------------
 # Application definition
