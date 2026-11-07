@@ -23,8 +23,8 @@
         </div>
     </div>
 
-    <!-- Day Header Card -->
-    <div class="card-theme p-5 sm:p-6 space-y-1.5">
+    <!-- Day Header (Flat on canvas) -->
+    <div class="section-theme space-y-1 px-1">
         <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Day Editor</span>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -61,9 +61,9 @@
     </div>
     {% endif %}
 
-    <!-- Section 1: Current Scheduled Exercises for this Day -->
-    <div class="card-theme p-5 space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+    <!-- Section 1: Current Scheduled Exercises for this Day (Flat section header + single-layer inset groups) -->
+    <div class="section-theme space-y-2.5">
+        <div class="flex items-center justify-between px-1">
             <h2 class="text-base font-semibold text-[var(--text-primary)]">
                 Scheduled on {{ day_name }}
             </h2>
@@ -75,9 +75,9 @@
         {% if day_data.has_workouts %}
         <div class="space-y-3">
             {% for p in day_data.workouts %}
-            <div class="p-4 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] space-y-3">
-                <div class="flex items-center justify-between">
-                    <h3 class="font-bold text-sm sm:text-base text-[var(--text-primary)]">
+            <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                <div class="px-3.5 py-2.5 bg-[var(--bg-surface-elevated)] flex items-center justify-between">
+                    <h3 class="font-bold text-sm text-[var(--text-primary)]">
                         {{ p.workout.name }}
                     </h3>
                     <span class="text-[10px] font-medium px-2 py-0.5 rounded-md badge-accent">
@@ -85,54 +85,51 @@
                     </span>
                 </div>
 
-                <div class="space-y-2">
-                    {% for we in p.exercises %}
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] gap-2">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold text-sm text-[var(--text-primary)]">{{ we.exercise.name }}</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-md badge-neutral">
-                                    {{ we.exercise.muscle_group }}
-                                </span>
-                            </div>
-                            <div class="text-xs text-[var(--text-muted)] mt-0.5 font-mono tabular-nums">
-                                <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
-                                <span class="text-accent font-medium">&bull; {{ we.weight_display }}</span>
-                                <span>&bull; {{ we.rest_seconds }}s rest</span>
-                            </div>
+                {% for we in p.exercises %}
+                <div class="flex items-center justify-between p-3.5 gap-3">
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-semibold text-sm text-[var(--text-primary)]">{{ we.exercise.name }}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-md badge-neutral">
+                                {{ we.exercise.muscle_group }}
+                            </span>
                         </div>
-
-                        <!-- Remove Exercise from this Day -->
-                        <form method="post" action="{% url 'workouts:schedule_day_exercise_remove' day_index we.id %}" class="inline m-0 self-end sm:self-auto">
-                            {% csrf_token %}
-                            <button type="submit"
-                                class="btn-gym btn-secondary-gym px-3 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--status-danger)]"
-                                title="Remove from {{ day_name }}">
-                                Remove
-                            </button>
-                        </form>
+                        <div class="text-xs text-[var(--text-muted)] mt-0.5 font-mono tabular-nums">
+                            <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
+                            <span class="text-accent font-medium">&bull; {{ we.weight_display }}</span>
+                        </div>
                     </div>
-                    {% endfor %}
+
+                    <!-- Remove Exercise from this Day -->
+                    <form method="post" action="{% url 'workouts:schedule_day_exercise_remove' day_index we.id %}" class="inline m-0 shrink-0">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="btn-gym btn-secondary-gym px-3 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--status-danger)]"
+                            title="Remove from {{ day_name }}">
+                            Remove
+                        </button>
+                    </form>
                 </div>
+                {% endfor %}
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface-elevated)] rounded-xl border border-[var(--border-subtle)]">
+        <div class="card-theme p-6 text-center text-xs text-[var(--text-muted)]">
             No exercises currently scheduled for {{ day_name }}. Use the selector below to add exercises.
         </div>
         {% endif %}
     </div>
 
-    <!-- Section 2: Add Exercises to this Day -->
-    <div class="card-theme p-5 sm:p-6 space-y-5" x-data="{
+    <!-- Section 2: Add Exercises to this Day (Flat section header + single-layer inset groups) -->
+    <div class="section-theme space-y-3" x-data="{
         allSelected: false,
         selectAll() {
             this.allSelected = !this.allSelected;
             document.querySelectorAll('.exercise-checkbox').forEach(cb => cb.checked = this.allSelected);
         }
     }">
-        <div class="space-y-1 pb-3 border-b border-[var(--border-subtle)]">
+        <div class="space-y-0.5 px-1">
             <h2 class="text-base font-bold text-[var(--text-primary)]">
                 Add Exercises to {{ day_name }}
             </h2>
@@ -143,7 +140,7 @@
 
         <!-- Filter Dropdown -->
         <div class="space-y-1.5">
-            <label for="id_filter_select" class="block text-xs font-semibold text-[var(--text-secondary)]">
+            <label for="id_filter_select" class="block text-xs font-semibold text-[var(--text-secondary)] px-1">
                 Filter Catalog By
             </label>
             <select name="filter" id="id_filter_select"
@@ -167,44 +164,43 @@
         </div>
 
         <!-- Multi-Select Add Form -->
-        <form method="post" action="{% url 'workouts:schedule_day_exercise_add' day_index %}" class="space-y-5">
+        <form method="post" action="{% url 'workouts:schedule_day_exercise_add' day_index %}" class="space-y-4">
             {% csrf_token %}
 
             <!-- Exercise Selection Container (HTMX Swapped by filter dropdown) -->
             {% include "workouts/partials/schedule_filtered_exercises.html" with filtered_exercises=filtered_exercises active_filter=active_filter %}
 
-            <!-- Workout Assignment & Prescription Settings -->
-            <div class="p-4 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] space-y-4">
-                <span class="text-xs font-semibold text-[var(--text-secondary)]">Prescription &amp; Workout Target</span>
+            <!-- Workout Assignment & Vertically Stacked Prescription Settings (Single-Layer Inset Panel) -->
+            <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                <div class="p-3.5 space-y-1.5">
+                    <label class="block text-xs font-semibold text-[var(--text-secondary)]">Assign to Workout</label>
+                    {% if user_workouts %}
+                    <select name="workout_id" class="input-gym cursor-pointer">
+                        {% for workout in user_workouts %}
+                        <option value="{{ workout.id }}">{{ workout.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" disabled value="Default: {{ day_name }} Routine" class="input-gym opacity-70">
+                    {% endif %}
+                </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label class="block text-[11px] font-medium uppercase text-[var(--text-muted)]">Assign to Workout</label>
-                        {% if user_workouts %}
-                        <select name="workout_id" class="input-gym cursor-pointer">
-                            {% for workout in user_workouts %}
-                            <option value="{{ workout.id }}">{{ workout.name }}</option>
-                            {% endfor %}
-                        </select>
-                        {% else %}
-                        <input type="text" disabled value="Default: {{ day_name }} Routine" class="input-gym opacity-70">
-                        {% endif %}
-                    </div>
+                <div class="flex items-center justify-between gap-3 p-3.5">
+                    <label class="text-xs font-semibold text-[var(--text-primary)]">Sets</label>
+                    <input type="number" name="target_sets" value="3" min="1" max="20" class="input-gym !w-24 text-center font-semibold text-base !h-11 !py-1 !px-2">
+                </div>
 
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase text-[var(--text-muted)] text-center">Sets</label>
-                            <input type="number" name="target_sets" value="3" min="1" max="20" class="input-gym text-center font-semibold text-sm h-11 p-1">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase text-[var(--text-muted)] text-center">Reps</label>
-                            <input type="number" name="target_reps" value="10" min="1" max="100" class="input-gym text-center font-semibold text-sm h-11 p-1">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase text-[var(--text-muted)] text-center">Kg</label>
-                            <input type="number" name="target_weight_kg" placeholder="BW" step="0.5" min="0" class="input-gym text-center font-semibold text-sm h-11 p-1">
-                        </div>
+                <div class="flex items-center justify-between gap-3 p-3.5">
+                    <label class="text-xs font-semibold text-[var(--text-primary)]">Reps</label>
+                    <input type="number" name="target_reps" value="10" min="1" max="100" class="input-gym !w-24 text-center font-semibold text-base !h-11 !py-1 !px-2">
+                </div>
+
+                <div class="flex items-center justify-between gap-3 p-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-[var(--text-primary)]">Weight (kg)</label>
+                        <span class="text-[11px] text-[var(--text-muted)]">Blank or 0 for bodyweight</span>
                     </div>
+                    <input type="number" name="target_weight_kg" placeholder="BW" step="0.5" min="0" class="input-gym !w-24 text-center font-semibold text-base !h-11 !py-1 !px-2">
                 </div>
             </div>
 

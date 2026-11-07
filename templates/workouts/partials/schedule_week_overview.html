@@ -50,19 +50,19 @@
         </div>
     </div>
 
-    <!-- 7-Day Vertical Mobile-First Schedule List -->
-    <div class="space-y-3.5">
+    <!-- 7-Day Vertical Mobile-First Schedule List (Single-Layer Inset Panels) -->
+    <div class="space-y-3">
         {% for day in week_days_data %}
         <div id="day-card-{{ day.day_index }}"
-            class="card-theme p-4 sm:p-5 transition-colors
+            class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden transition-colors
                 {% if day.is_today %}
                     !border-[var(--border-active)]
                 {% endif %}">
 
             <!-- Day Header & Status -->
-            <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+            <div class="p-3.5 sm:p-4 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <span class="w-9 h-9 rounded-xl badge-neutral flex items-center justify-center text-xs font-semibold font-mono">
+                    <span class="w-9 h-9 rounded-xl badge-neutral flex items-center justify-center text-xs font-semibold font-mono shrink-0">
                         {{ day.day_abbr }}
                     </span>
                     <div>
@@ -90,70 +90,65 @@
                 </a>
             </div>
 
-            <!-- Scheduled Workouts / Content -->
-            <div class="pt-3 space-y-3">
-                {% if day.has_workouts %}
-                    {% for p in day.workouts %}
-                    <div class="p-3.5 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] space-y-2.5">
-                        <!-- Workout Title -->
-                        <div class="flex items-center justify-between">
-                            <h4 class="font-bold text-sm text-[var(--text-primary)]">
-                                {{ p.workout.name }}
-                            </h4>
-                            <span class="text-[10px] font-medium px-2 py-0.5 rounded-md badge-accent">
-                                {{ p.recurrence }}
-                            </span>
-                        </div>
-
-                        <!-- Exercises list -->
-                        <div class="space-y-1.5 pt-2 border-t border-[var(--border-subtle)] text-xs">
-                            <ul class="space-y-1.5">
-                                {% for we in p.exercises %}
-                                <li class="flex flex-col sm:flex-row sm:items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-semibold text-[var(--text-primary)]">{{ we.exercise.name }}</span>
-                                        <span class="text-[10px] px-1.5 py-0.5 rounded badge-neutral">
-                                            {{ we.exercise.muscle_group }}
-                                        </span>
-                                    </div>
-                                    <div class="text-[11px] text-[var(--text-secondary)] font-mono tabular-nums flex items-center gap-1.5 mt-0.5 sm:mt-0">
-                                        <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
-                                        <span class="text-accent font-medium">&bull; {{ we.weight_display }}</span>
-                                        <span class="text-[var(--text-muted)]">({{ we.rest_seconds }}s)</span>
-                                    </div>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
+            <!-- Scheduled Workouts / Content (Directly inside panel via hairline dividers) -->
+            {% if day.has_workouts %}
+                {% for p in day.workouts %}
+                <div class="p-3.5 sm:p-4 space-y-2">
+                    <!-- Workout Title -->
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-sm text-[var(--text-primary)]">
+                            {{ p.workout.name }}
+                        </h4>
+                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md badge-accent">
+                            {{ p.recurrence }}
+                        </span>
                     </div>
-                    {% endfor %}
 
-                    <!-- Day Summary metrics -->
-                    <div class="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-0.5 px-1 tabular-nums">
-                        <span>{{ day.total_exercises }} exercise(s) &bull; {{ day.total_sets }} total sets</span>
-                        <a href="{% url 'workouts:schedule_day' day.day_index %}" class="text-accent hover:underline font-medium">
-                            + Add exercises
-                        </a>
-                    </div>
-                {% else %}
-                    <!-- Rest Day / Empty State -->
-                    <div class="p-3.5 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                        <div class="flex items-center gap-2.5">
-                            <span class="theme-mood-icon theme-mood-recovery text-[var(--text-muted)] shrink-0" aria-hidden="true"></span>
-                            <div>
-                                <span class="font-semibold text-[var(--text-primary)]">Rest &amp; Recovery Day</span>
-                                <p class="text-[11px] text-[var(--text-muted)]">
-                                    Muscle recovery and balanced nutrition focus.
-                                </p>
+                    <!-- Exercises list -->
+                    <ul class="divide-y divide-[var(--border-subtle)] text-xs">
+                        {% for we in p.exercises %}
+                        <li class="flex flex-col sm:flex-row sm:items-center justify-between py-2 first:pt-1 last:pb-0 gap-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-semibold text-[var(--text-primary)]">{{ we.exercise.name }}</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded badge-neutral">
+                                    {{ we.exercise.muscle_group }}
+                                </span>
                             </div>
+                            <div class="text-[11px] text-[var(--text-secondary)] font-mono tabular-nums flex items-center gap-1.5">
+                                <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
+                                <span class="text-accent font-medium">&bull; {{ we.weight_display }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+
+                <!-- Day Summary metrics -->
+                <div class="px-3.5 py-2.5 bg-[var(--bg-surface-elevated)] flex items-center justify-between text-[11px] text-[var(--text-muted)] tabular-nums">
+                    <span>{{ day.total_exercises }} exercise(s) &bull; {{ day.total_sets }} total sets</span>
+                    <a href="{% url 'workouts:schedule_day' day.day_index %}" class="text-accent hover:underline font-medium">
+                        + Add exercises
+                    </a>
+                </div>
+            {% else %}
+                <!-- Rest Day / Empty State -->
+                <div class="p-3.5 sm:p-4 bg-[var(--bg-surface-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <span class="theme-mood-icon theme-mood-recovery text-[var(--text-muted)] shrink-0" aria-hidden="true"></span>
+                        <div>
+                            <span class="font-semibold text-[var(--text-primary)]">Rest &amp; Recovery Day</span>
+                            <p class="text-[11px] text-[var(--text-muted)]">
+                                Muscle recovery and balanced nutrition focus.
+                            </p>
                         </div>
-                        <a href="{% url 'workouts:schedule_day' day.day_index %}"
-                            class="btn-gym btn-secondary-gym px-3 text-xs font-medium self-start sm:self-auto">
-                            + Schedule Workout
-                        </a>
                     </div>
-                {% endif %}
-            </div>
+                    <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                        class="btn-gym btn-secondary-gym px-3 text-xs font-medium self-start sm:self-auto">
+                        + Schedule Workout
+                    </a>
+                </div>
+            {% endif %}
 
         </div>
         {% endfor %}

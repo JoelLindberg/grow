@@ -8,30 +8,9 @@
 <div class="space-y-6" x-data="{
     workoutStarted: false,
     exercises: JSON.parse(document.getElementById('today-exercises-data')?.textContent || '[]'),
-    restTimer: 90,
-    timerRunning: false,
-    timerInterval: null,
     wellRested: true,
     allCompleted() {
         return this.exercises.length > 0 && this.exercises.every(e => e.completed);
-    },
-    startTimer(seconds = 90) {
-        this.stopTimer();
-        this.restTimer = seconds;
-        this.timerRunning = true;
-        this.timerInterval = setInterval(() => {
-            if (this.restTimer > 0) {
-                this.restTimer--;
-            } else {
-                this.stopTimer();
-                this.restTimer = 90;
-                if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-            }
-        }, 1000);
-    },
-    stopTimer() {
-        this.timerRunning = false;
-        if (this.timerInterval) clearInterval(this.timerInterval);
     }
 }">
 
@@ -75,44 +54,24 @@
     </div>
     {% endif %}
 
-    <!-- Today's Workout Header Banner -->
-    <div class="card-theme p-5 sm:p-6 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div class="space-y-1">
-                <span class="text-xs font-semibold text-accent">
-                    Today's Scheduled Workout &bull; {{ today_day_name }}
-                </span>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
-                    {% if primary_workout %}{{ primary_workout.name }}{% else %}Rest &amp; Recovery Day{% endif %}
-                </h1>
-                <p class="text-xs sm:text-sm text-[var(--text-muted)] tabular-nums">
-                    {{ today_date|date:"l, F j, Y" }}
-                    {% if has_workouts %} &bull; <span x-text="exercises.length"></span> exercise(s) planned{% endif %}
-                </p>
-            </div>
-
-            <!-- Zero-Latency Rest Timer Widget -->
-            {% if has_workouts %}
-            <div class="flex items-center gap-2.5 self-start sm:self-auto px-3 py-2 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] tabular-nums">
-                <div class="text-right">
-                    <span class="block text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Rest Timer</span>
-                    <span class="text-xl font-mono font-bold text-accent"
-                        x-text="`${Math.floor(restTimer/60)}:${(restTimer%60).toString().padStart(2, '0')}`">1:30</span>
-                </div>
-                <div class="flex flex-col gap-1">
-                    <button type="button" @click="timerRunning ? stopTimer() : startTimer(restTimer)"
-                        class="px-2.5 py-1 text-[11px] font-semibold rounded-md badge-accent transition-colors"
-                        x-text="timerRunning ? 'Pause' : 'Start'">Start</button>
-                    <button type="button" @click="stopTimer(); restTimer = 60;"
-                        class="px-2 py-0.5 text-[10px] rounded-md badge-neutral">60s</button>
-                </div>
-            </div>
-            {% endif %}
+    <!-- Today's Workout Header (Flat on canvas) -->
+    <div class="section-theme space-y-3 px-1">
+        <div class="space-y-1">
+            <span class="text-xs font-semibold text-accent">
+                Today's Scheduled Workout &bull; {{ today_day_name }}
+            </span>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
+                {% if primary_workout %}{{ primary_workout.name }}{% else %}Rest &amp; Recovery Day{% endif %}
+            </h1>
+            <p class="text-xs sm:text-sm text-[var(--text-muted)] tabular-nums">
+                {{ today_date|date:"l, F j, Y" }}
+                {% if has_workouts %} &bull; <span x-text="exercises.length"></span> exercise(s) planned{% endif %}
+            </p>
         </div>
 
         {% if has_workouts %}
-        <!-- Step 5: Options (Start workout, Postpone for next day, Mark as skipped) -->
-        <div class="pt-3 border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-3">
+        <!-- Options (Start workout, Postpone for next day, Mark as skipped) -->
+        <div class="pt-2 flex flex-wrap items-center justify-between gap-2.5">
             <div class="flex flex-wrap items-center gap-2">
                 <button type="button" @click="workoutStarted = true"
                     class="btn-gym btn-primary-gym px-5 text-sm font-semibold gap-2">
@@ -123,7 +82,7 @@
                 <form method="post" action="{% url 'workouts:workout_postpone' %}" class="inline m-0">
                     {% csrf_token %}
                     <button type="submit"
-                        class="btn-gym btn-secondary-gym px-4 text-xs font-medium"
+                        class="btn-gym btn-secondary-gym px-3.5 text-xs font-medium"
                         title="Move today's workout to tomorrow">
                         Postpone for Next Day
                     </button>
@@ -134,7 +93,7 @@
                     onsubmit="return confirm('Mark today\'s workout as skipped?');" class="inline m-0">
                     {% csrf_token %}
                     <button type="submit"
-                        class="btn-gym btn-secondary-gym px-4 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--status-danger)]"
+                        class="btn-gym btn-secondary-gym px-3.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--status-danger)]"
                         title="Skip workout today">
                         Mark as Skipped
                     </button>
@@ -154,7 +113,7 @@
     <div class="space-y-6">
 
         <!-- All Exercises Completed Banner -->
-        <div x-show="allCompleted()" x-transition class="p-4 sm:p-5 rounded-2xl badge-success flex items-center justify-between gap-4">
+        <div x-show="allCompleted()" x-transition class="p-4 rounded-2xl badge-success flex items-center justify-between gap-4">
             <div class="space-y-0.5">
                 <h3 class="text-base font-bold">All Exercises Completed</h3>
                 <p class="text-xs opacity-90">
@@ -166,21 +125,21 @@
             </a>
         </div>
 
-        <!-- Exercise List with Pre-filled Counters (+ / -) and Checkboxes -->
-        <div class="space-y-3">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <!-- Exercise List with Single-Layer Inset Panels -->
+        <div class="section-theme space-y-2.5">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] px-1">
                 Today's Exercises
             </h2>
 
             <template x-for="(ex, index) in exercises" :key="ex.id">
-                <div class="card-theme p-4 sm:p-5 transition-colors"
+                <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden transition-colors"
                     :class="ex.completed ? '!bg-[var(--accent-subtle)] !border-[var(--accent-border)]' : ''">
 
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <!-- Left: Checkbox (Min 44x44px gym touch target) & Exercise Title -->
+                    <!-- Header: Checkbox (Min 44x44px gym touch target) & Exercise Title -->
+                    <div class="p-3.5 sm:p-4 flex items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <button type="button"
-                                @click="ex.completed = !ex.completed; if(ex.completed) startTimer(ex.rest_seconds || 60);"
+                                @click="ex.completed = !ex.completed"
                                 class="counter-btn shrink-0"
                                 :class="ex.completed ? '!bg-[var(--accent-primary)] !text-white !border-[var(--accent-primary)]' : ''"
                                 :title="ex.completed ? 'Mark incomplete' : 'Mark complete'">
@@ -202,34 +161,43 @@
                                     <span x-text="ex.sets"></span> sets &times; <span x-text="ex.reps"></span> reps
                                     <span x-show="ex.weight > 0"> &bull; <span x-text="ex.weight"></span> kg</span>
                                     <span x-show="ex.weight == 0"> &bull; Bodyweight</span>
-                                    &bull; <span x-text="`${ex.rest_seconds || 60}s rest`"></span>
                                 </p>
                             </div>
                         </div>
 
-                        <!-- Right: Interactive Reps & Sets Counters with + / - buttons -->
-                        <div class="flex items-center gap-3 self-end sm:self-center border-t sm:border-t-0 pt-2 sm:pt-0 border-[var(--border-subtle)] tabular-nums">
-                            <!-- Sets Counter (+ / -) -->
-                            <div class="flex items-center gap-1">
-                                <span class="text-[11px] font-medium text-[var(--text-muted)] mr-0.5">Sets</span>
+                        <span class="text-[11px] font-medium px-2 py-0.5 rounded-md shrink-0"
+                            :class="ex.completed ? 'badge-accent' : 'badge-neutral'"
+                            x-text="ex.completed ? 'Done' : 'Pending'"></span>
+                    </div>
+
+                    <!-- Vertically Stacked Counters on Mobile (Sets, Reps, Weight) Directly Inside Card -->
+                    <div class="divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)] grid grid-cols-1 sm:grid-cols-3 tabular-nums">
+                        <!-- Sets Counter (+ / -) -->
+                        <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
+                            <span class="text-xs font-medium text-[var(--text-secondary)]">Sets</span>
+                            <div class="flex items-center gap-1.5">
                                 <button type="button" @click="if (ex.sets > 1) ex.sets--" class="counter-btn">-</button>
-                                <span class="w-6 text-center font-semibold text-sm" x-text="ex.sets"></span>
+                                <span class="w-10 text-center font-semibold text-base text-[var(--text-primary)]" x-text="ex.sets"></span>
                                 <button type="button" @click="ex.sets++" class="counter-btn">+</button>
                             </div>
+                        </div>
 
-                            <!-- Reps Counter (+ / -) -->
-                            <div class="flex items-center gap-1">
-                                <span class="text-[11px] font-medium text-[var(--text-muted)] mr-0.5">Reps</span>
+                        <!-- Reps Counter (+ / -) -->
+                        <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
+                            <span class="text-xs font-medium text-[var(--text-secondary)]">Reps</span>
+                            <div class="flex items-center gap-1.5">
                                 <button type="button" @click="if (ex.reps > 1) ex.reps--" class="counter-btn">-</button>
-                                <span class="w-7 text-center font-semibold text-sm" x-text="ex.reps"></span>
+                                <span class="w-10 text-center font-semibold text-base text-[var(--text-primary)]" x-text="ex.reps"></span>
                                 <button type="button" @click="ex.reps++" class="counter-btn">+</button>
                             </div>
+                        </div>
 
-                            <!-- Weight Counter (+ / -) -->
-                            <div class="flex items-center gap-1">
-                                <span class="text-[11px] font-medium text-[var(--text-muted)] mr-0.5">Kg</span>
+                        <!-- Weight Counter (+ / -) -->
+                        <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
+                            <span class="text-xs font-medium text-[var(--text-secondary)]">Weight (kg)</span>
+                            <div class="flex items-center gap-1.5">
                                 <button type="button" @click="if (ex.weight >= 2.5) ex.weight -= 2.5; else if(ex.weight > 0) ex.weight = 0;" class="counter-btn">-</button>
-                                <span class="w-8 text-center font-semibold text-sm" x-text="ex.weight"></span>
+                                <span class="w-12 text-center font-semibold text-base text-[var(--text-primary)]" x-text="ex.weight"></span>
                                 <button type="button" @click="ex.weight += 2.5" class="counter-btn">+</button>
                             </div>
                         </div>
@@ -239,9 +207,9 @@
             </template>
         </div>
 
-        <!-- Workout Result Tracking & Save Form -->
-        <div id="save-workout-form" class="card-theme p-5 sm:p-6 space-y-5">
-            <div class="space-y-1 pb-3 border-b border-[var(--border-subtle)]">
+        <!-- Workout Result Tracking & Save Form (Flat section header + single-layer inset items) -->
+        <div id="save-workout-form" class="section-theme space-y-3">
+            <div class="space-y-0.5 px-1">
                 <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Result Tracking</span>
                 <h3 class="text-lg font-bold text-[var(--text-primary)]">
                     Save Workout Session
@@ -251,7 +219,7 @@
                 </p>
             </div>
 
-            <form method="post" action="{% url 'workouts:workout_save_session' %}" class="space-y-5">
+            <form method="post" action="{% url 'workouts:workout_save_session' %}" class="space-y-3">
                 {% csrf_token %}
                 <input type="hidden" name="workout_id" value="{% if primary_workout %}{{ primary_workout.id }}{% endif %}">
                 <input type="hidden" name="workout_name" value="{% if primary_workout %}{{ primary_workout.name }}{% else %}Daily Workout{% endif %}">
@@ -268,57 +236,60 @@
                     </div>
                 </template>
 
-                <!-- Well Rested or Not -->
-                <div class="space-y-2">
-                    <label class="block text-xs font-semibold text-[var(--text-secondary)]">
-                        Energy &amp; Recovery Status
-                    </label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <label class="cursor-pointer">
-                            <input type="radio" name="well_rested" value="1" x-model="wellRested" class="sr-only peer" checked>
-                            <div class="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center gap-3 peer-checked:border-[var(--status-success)] peer-checked:bg-[var(--status-success-bg)] transition-colors">
-                                <span class="theme-mood-icon theme-mood-rested text-[var(--status-success)] shrink-0" aria-hidden="true"></span>
-                                <div>
-                                    <span class="text-xs font-semibold text-[var(--text-primary)] block">Well Rested</span>
-                                    <span class="text-[11px] text-[var(--text-muted)]">Felt energetic and ready for training.</span>
+                <!-- Single-Layer Inset Panel for Session Outcome -->
+                <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                    <!-- Well Rested or Not -->
+                    <div class="p-3.5 sm:p-4 space-y-2">
+                        <label class="block text-xs font-semibold text-[var(--text-secondary)]">
+                            Energy &amp; Recovery Status
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="well_rested" value="1" x-model="wellRested" class="sr-only peer" checked>
+                                <div class="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center gap-3 peer-checked:border-[var(--status-success)] peer-checked:bg-[var(--status-success-bg)] transition-colors">
+                                    <span class="theme-mood-icon theme-mood-rested text-[var(--status-success)] shrink-0" aria-hidden="true"></span>
+                                    <div>
+                                        <span class="text-xs font-semibold text-[var(--text-primary)] block">Well Rested</span>
+                                        <span class="text-[11px] text-[var(--text-muted)]">Felt energetic and ready for training.</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </label>
+                            </label>
 
-                        <label class="cursor-pointer">
-                            <input type="radio" name="well_rested" value="0" x-model="wellRested" class="sr-only peer">
-                            <div class="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center gap-3 peer-checked:border-[var(--status-warning)] peer-checked:bg-[var(--status-warning-bg)] transition-colors">
-                                <span class="theme-mood-icon theme-mood-recovery text-[var(--status-warning)] shrink-0" aria-hidden="true"></span>
-                                <div>
-                                    <span class="text-xs font-semibold text-[var(--text-primary)] block">Needs More Rest / Fatigued</span>
-                                    <span class="text-[11px] text-[var(--text-muted)]">Helps guide scheduling recovery days.</span>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="well_rested" value="0" x-model="wellRested" class="sr-only peer">
+                                <div class="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center gap-3 peer-checked:border-[var(--status-warning)] peer-checked:bg-[var(--status-warning-bg)] transition-colors">
+                                    <span class="theme-mood-icon theme-mood-recovery text-[var(--status-warning)] shrink-0" aria-hidden="true"></span>
+                                    <div>
+                                        <span class="text-xs font-semibold text-[var(--text-primary)] block">Needs More Rest / Fatigued</span>
+                                        <span class="text-[11px] text-[var(--text-muted)]">Helps guide scheduling recovery days.</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </label>
+                            </label>
+                        </div>
                     </div>
-                </div>
 
-                <!-- All Goals Completed Checkbox -->
-                <div class="p-3.5 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5">
-                        <input type="checkbox" name="all_goals_completed" id="id_goals_completed"
-                            :checked="allCompleted()"
-                            class="w-5 h-5 rounded cursor-pointer accent-[var(--accent-primary)]">
-                        <label for="id_goals_completed" class="text-xs font-semibold text-[var(--text-primary)] cursor-pointer">
-                            All workout goals completed as prescribed
-                        </label>
+                    <!-- All Goals Completed Checkbox -->
+                    <div class="p-3.5 sm:p-4 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" name="all_goals_completed" id="id_goals_completed"
+                                :checked="allCompleted()"
+                                class="w-5 h-5 rounded cursor-pointer accent-[var(--accent-primary)]">
+                            <label for="id_goals_completed" class="text-xs font-semibold text-[var(--text-primary)] cursor-pointer">
+                                All workout goals completed as prescribed
+                            </label>
+                        </div>
+                        <span class="text-[11px] text-[var(--text-muted)] tabular-nums shrink-0" x-text="`${exercises.filter(e => e.completed).length} of ${exercises.length} checked`"></span>
                     </div>
-                    <span class="text-[11px] text-[var(--text-muted)] tabular-nums" x-text="`${exercises.filter(e => e.completed).length} of ${exercises.length} checked`"></span>
-                </div>
 
-                <!-- Notes / Reflections -->
-                <div class="space-y-1.5">
-                    <label for="id_workout_notes" class="block text-xs font-semibold text-[var(--text-secondary)]">
-                        Workout Notes &amp; Reflections (Optional)
-                    </label>
-                    <textarea name="notes" id="id_workout_notes" rows="3"
-                        class="input-gym resize-none"
-                        placeholder="Log any personal records, mood, intensity adjustments, or how your sets felt..."></textarea>
+                    <!-- Notes / Reflections -->
+                    <div class="p-3.5 sm:p-4 space-y-1.5">
+                        <label for="id_workout_notes" class="block text-xs font-semibold text-[var(--text-secondary)]">
+                            Workout Notes &amp; Reflections (Optional)
+                        </label>
+                        <textarea name="notes" id="id_workout_notes" rows="3"
+                            class="input-gym resize-none"
+                            placeholder="Log any personal records, mood, intensity adjustments, or how your sets felt..."></textarea>
+                    </div>
                 </div>
 
                 <!-- Submit Button -->

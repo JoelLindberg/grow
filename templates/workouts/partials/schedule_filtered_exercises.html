@@ -20,9 +20,9 @@
     </div>
 
     {% if filtered_exercises %}
-    <div class="space-y-2 max-h-96 overflow-y-auto pr-1">
+    <div class="card-theme divide-y divide-[var(--border-subtle)] max-h-96 overflow-y-auto overflow-x-hidden">
         {% for ex in filtered_exercises %}
-        <label class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--border-medium)] cursor-pointer transition-colors">
+        <label class="flex items-center justify-between p-3.5 hover:bg-[var(--bg-surface-elevated)] cursor-pointer transition-colors">
             <div class="flex items-center gap-3">
                 <div class="w-7 h-7 flex items-center justify-center shrink-0">
                     <input type="checkbox" name="selected_exercises" value="{{ ex.id }}"

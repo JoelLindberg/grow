@@ -15,26 +15,34 @@ GROW is a mobile-first Progressive Web App (PWA) designed to feel like a **nativ
 
 ---
 
-## 2. Foundational References
+## 2. Foundational References & Division of Responsibilities
 
-GROW combines **Apple Human Interface Guidelines (HIG)** for native mobile feel and material depth with **Material Design 3 (M3)** for web-adaptive layout, tonal surfaces, and interaction states:
+GROW intentionally combines **Apple Human Interface Guidelines (HIG)** and **Material Design 3 (M3)**. Where the two systems differ, GROW resolves conflicts using a strict division of responsibilities:
 
+| Design Domain | Governing Standard | How GROW Applies It |
+| :--- | :--- | :--- |
+| **Spatial Layout & Card Hierarchy** | **Apple HIG** (*Inset Grouped*) | Flat app canvas (`--bg-app`) behind sections. Sections themselves have **no outer border or panel background on mobile**; only the leaf items/groups inside have elevated panel borders (`.card-theme`). Never nest a bordered card inside another bordered card. |
+| **Viewport Margins (Mobile-First)** | **Apple HIG** | Content extends nearly to the mobile viewport edges (`10px` / `px-2.5` outer margin on mobile) to maximize horizontal space for numbers and steppers. |
+| **Navigation & Floating Chrome** | **Apple Liquid Glass** | Translucent frosted glass (`backdrop-filter: blur(...) saturate(...)` + specular edge) reserved exclusively for the sticky top header and collapsible mobile menu. |
+| **Color Tokens & Light/Dark Tinting** | **Material Design 3** | Semantic tonal surface variables (`--bg-app`, `--bg-surface`, `--bg-surface-elevated`) and lightly tinted Light/Dark palettes driven by a single replaceable `static/css/theme.css` file. |
+| **Web Adaptability & States** | **Material Design 3** | Responsive desktop/tablet grid breakpoints (`sm:`, `md:`, `lg:`), keyboard focus rings, and pointer hover state layers not covered by device-only iOS guidelines. |
+
+### Reference Links
 1. **[Apple Interface Fundamentals](https://developer.apple.com/documentation/technologyoverviews/interface-fundamentals)**
    - **Clarity & Deference**: The interface defers to the user's workout and nutrition data. Chrome is minimal; typography and whitespace establish hierarchy.
-   - **Layered Depth**: Distinct visual layers (background canvas, elevated grouped cards, and floating translucent navigation) help users understand their position in the app.
-   - **Tactile Native Controls**: Use clean inset grouped lists, segmented controls, and large steppers (`+` / `-`) sized for effortless thumb interaction (minimum `44x44px` touch targets).
+   - **Inset Grouped Layout (No "Card-in-a-Card")**: Like iOS Settings, Health, and Fitness, outer sections sit directly on the flat canvas. Only individual items or inset control groups have a panel background and border.
+   - **Tactile Native Controls**: Use clean inset grouped rows, segmented controls, and large steppers (`+` / `-`) sized for effortless thumb interaction (minimum `44x44px` touch targets).
 
 2. **[Apple Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)**
-   - **Selective Application**: Liquid Glass (`backdrop-filter: blur(...) saturate(...)` with subtle specular top/inner highlights) is reserved **exclusively for floating navigation and chrome layers** that sit above scrolling content:
+   - **Selective Application**: Liquid Glass is reserved **exclusively for floating navigation and chrome layers** that sit above scrolling content:
      - Sticky top navigation header
      - Collapsible mobile navigation menu (3-line hamburger toggle expanding a Liquid Glass sheet)
-     - Floating bottom action bar / active workout timer bar
-     - Modal sheets and popovers
-   - **Never Overuse on Content**: Standard content cards, exercise rows, and form inputs sit on solid or softly elevated tonal surfaces so scrolling content remains crisp and legible.
+     - Floating bottom action bar / modal sheets
+   - **Never Overuse on Content**: Standard content items, exercise rows, and form inputs sit on solid tonal surfaces so scrolling content remains crisp and legible.
 
 3. **[Material Design 3 (M3)](https://m3.material.io/)**
-   - **Tonal Surface Elevation**: Instead of heavy drop shadows, depth in the main content area is expressed through subtle shifts in surface luminance (Surface $\rightarrow$ Surface Container $\rightarrow$ Surface Container High).
-   - **Web Layout & State Layers**: Responsive container widths, predictable focus/hover/pressed state overlays, and accessible contrast ratios across desktop and mobile viewports.
+   - **Tonal Surface Elevation**: Instead of heavy drop shadows, depth in the main content area is expressed through subtle shifts in surface luminance.
+   - **Web Layout & State Layers**: Responsive container widths on desktop browsers, predictable focus/hover/pressed state overlays, and accessible contrast ratios across Light and Dark modes.
 
 ---
 
@@ -63,10 +71,16 @@ Both Light and Dark themes are **lightly tinted** using a shared set of CSS cust
 
 ## 4. Visual Building Blocks & Component Guidelines
 
-### Surfaces & Glass
-- **App Canvas (`--bg-app`)**: Tinted soft off-white in Light mode; deep muted slate/stone in Dark mode.
-- **Content Cards (`.card-theme`)**: Solid tonal surface (`--bg-surface`), subtle `1px` border (`--border-subtle`), generous border radius (`16px`–`20px`), and whisper-soft ambient shadow.
-- **Liquid Glass Chrome (`.surface-glass`)**: Translucent background (`--bg-glass`), `backdrop-filter: blur(20px) saturate(180%)`, and a subtle specular border highlight (`--border-glass-specular`) that mimics light catching a frosted glass edge.
+### Surfaces, Sections & Single-Layer Items
+- **App Canvas (`--bg-app`)**: Flat, lightly tinted off-white in Light mode; deep muted slate/stone in Dark mode.
+- **Section Containers (`.section-theme`)**:
+  - On **mobile (`< 640px`)**: Completely unboxed (`background: transparent`, `border: 0`, `padding: 0`, `box-shadow: none`). Section titles sit directly on the flat canvas so zero horizontal space is wasted on outer card margins.
+  - On **desktop/tablet (`>= 640px`)**: May optionally apply subtle surface grouping where helpful for wide multi-column layouts.
+- **Leaf Items & Inset Groups (`.card-theme`)**:
+  - Applied **only to the inner items or grouped control rows** (e.g., an individual exercise item, an inset list of `Sets` / `Reps` / `Weight` rows, or a standalone widget).
+  - Uses solid tonal surface (`--bg-surface`), subtle `1px` border (`--border-subtle`), rounded corners (`16px`), and compact mobile padding (`p-3.5 sm:p-5`).
+  - **No Double-Nesting Rule**: Never place a bordered `.card-theme` or bordered sub-panel inside another `.card-theme` on mobile. Separate rows inside an item using hairline horizontal dividers (`divide-y divide-[var(--border-subtle)]`).
+- **Liquid Glass Chrome (`.surface-glass`)**: Translucent background (`--bg-glass`), `backdrop-filter: blur(28px) saturate(200%)`, and a subtle specular border highlight (`--border-glass-specular`) that mimics light catching a frosted glass edge.
 
 ### Typography & Hierarchy
 - **Font Stack**: Clean geometric/humanist sans-serif (`Plus Jakarta Sans`, `-apple-system`, `SF Pro Display`, system-ui).
@@ -75,5 +89,6 @@ Both Light and Dark themes are **lightly tinted** using a shared set of CSS cust
 
 ### Gym Usability & Touch Targets
 - **44x44px Minimum**: Every interactive button, stepper (`+`/`-`), checkbox, and navigation link must have a minimum hit area of `44x44px`.
+- **Vertically Stacked Exercise Prescriptions**: When adding or editing exercises (`Sets`, `Reps`, `Weight (kg)`), stack the controls vertically in full-width inset rows rather than cramming multiple steppers side-by-side horizontally. This guarantees numbers remain clearly legible on mobile screens.
 - **Calm, Focused Layouts**: Single-column vertical flow on mobile (`9:16` proportion). Group related controls cleanly inside inset cards with clear dividers so the user can log sets mid-workout with zero cognitive load.
 

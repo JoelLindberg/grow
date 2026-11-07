@@ -174,11 +174,21 @@ body {
   border-radius: 1.25rem;
 }
 
-/* Standard content container — crisp tonal elevation with subtle specular edge */
+/* Flat section container (Apple HIG Inset Grouped pattern):
+   No outer panel border, no background shift, and no horizontal padding so sections
+   sit flat on the canvas and expand almost to the screen border. */
+.section-theme {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Leaf item / Inset group panel — only the items inside sections have panel borders */
 .card-theme {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 1.125rem;
+  border-radius: 1rem;
   box-shadow: var(--shadow-card);
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }

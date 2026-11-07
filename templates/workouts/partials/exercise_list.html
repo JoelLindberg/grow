@@ -21,9 +21,9 @@
     </div>
 
     {% if exercises %}
-    <div class="space-y-3">
+    <div class="space-y-2.5">
         {% for we in exercises %}
-        <div id="exercise-row-{{ we.id }}" class="card-theme p-4">
+        <div id="exercise-row-{{ we.id }}" class="card-theme p-3.5 sm:p-4">
 
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <!-- Exercise Info -->
@@ -63,10 +63,6 @@
                                 {{ we.weight_display }}
                             </span>
                             {% endif %}
-
-                            <span class="text-[var(--text-secondary)] badge-neutral px-2.5 py-0.5 rounded-md">
-                                {{ we.rest_seconds }}s <span class="text-[var(--text-muted)] text-[10px]">rest</span>
-                            </span>
 
                             {% if we.scheduled_days %}
                             <span class="font-medium badge-accent px-2.5 py-0.5 rounded-md">
@@ -116,7 +112,7 @@
                         hx-get="{% url 'workouts:workout_exercise_edit' workout.id we.id %}"
                         hx-target="#exercise-row-{{ we.id }}"
                         class="counter-btn text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                        title="Edit sets, reps, weight, or rest">
+                        title="Edit sets, reps, or weight">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>

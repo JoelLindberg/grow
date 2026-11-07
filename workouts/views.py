@@ -199,7 +199,6 @@ def dashboard_view(request):
                         "sets": we.target_sets,
                         "reps": we.target_reps,
                         "weight": float(we.target_weight_kg) if we.target_weight_kg else 0,
-                        "rest_seconds": we.rest_seconds,
                         "completed": False,
                     }
                 )
@@ -353,7 +352,6 @@ def workout_duplicate_view(request, workout_id):
                 target_sets=we.target_sets,
                 target_reps=we.target_reps,
                 target_weight_kg=we.target_weight_kg,
-                rest_seconds=we.rest_seconds,
                 scheduled_days=list(we.scheduled_days),
                 order=we.order,
             )
@@ -560,7 +558,6 @@ def workout_today_view(request):
                         "sets": we.target_sets,
                         "reps": we.target_reps,
                         "weight": float(we.target_weight_kg) if we.target_weight_kg else 0,
-                        "rest_seconds": we.rest_seconds,
                         "completed": False,
                     }
                 )
@@ -929,7 +926,6 @@ def schedule_day_exercise_add_view(request, day_index):
     target_reps = int(request.POST.get("target_reps", 10) or 10)
     target_weight_kg = request.POST.get("target_weight_kg")
     target_weight_kg = float(target_weight_kg) if target_weight_kg else None
-    rest_seconds = int(request.POST.get("rest_seconds", 60) or 60)
 
     added_count = 0
     with transaction.atomic():
@@ -953,7 +949,6 @@ def schedule_day_exercise_add_view(request, day_index):
                     target_sets=target_sets,
                     target_reps=target_reps,
                     target_weight_kg=target_weight_kg,
-                    rest_seconds=rest_seconds,
                     scheduled_days=[day_index],
                     order=max_order + 1,
                 )

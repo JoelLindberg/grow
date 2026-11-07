@@ -45,13 +45,13 @@
 
     <!-- Logs List -->
     {% if logs %}
-    <div class="space-y-4">
+    <div class="space-y-3.5">
         {% for log in logs %}
-        <div class="card-theme p-5 sm:p-6 space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+            <div class="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div class="space-y-1">
                     <div class="flex items-center gap-2 flex-wrap">
-                        <h2 class="text-lg font-bold text-[var(--text-primary)]">{{ log.workout_name }}</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-[var(--text-primary)]">{{ log.workout_name }}</h2>
                         <!-- Status Badge -->
                         {% if log.status == 'completed' %}
                             <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold badge-success">
@@ -100,25 +100,25 @@
 
             <!-- Notes -->
             {% if log.notes %}
-            <div class="p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
+            <div class="px-3.5 py-2.5 bg-[var(--bg-surface-elevated)] text-xs text-[var(--text-secondary)]">
                 "{{ log.notes }}"
             </div>
             {% endif %}
 
-            <!-- Exercise Snapshot -->
+            <!-- Exercise Snapshot (Hairline rows instead of nested boxes) -->
             {% if log.exercise_data %}
-            <div class="space-y-1.5 pt-2 border-t border-[var(--border-subtle)]">
+            <div class="p-3.5 sm:p-4 space-y-1.5">
                 <span class="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Exercises Logged</span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div class="divide-y divide-[var(--border-subtle)] text-xs">
                     {% for item in log.exercise_data %}
-                    <div class="p-2.5 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] flex items-center justify-between">
+                    <div class="py-2 first:pt-1 last:pb-0 flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2">
                             <span class="{% if item.completed %}text-[var(--status-success)] font-bold{% else %}text-[var(--text-muted)]{% endif %}">
                                 {% if item.completed %}✓{% else %}○{% endif %}
                             </span>
                             <span class="font-medium text-[var(--text-primary)]">{{ item.name }}</span>
                         </div>
-                        <span class="text-[11px] font-mono text-[var(--text-muted)] tabular-nums">
+                        <span class="text-[11px] font-mono text-[var(--text-muted)] tabular-nums shrink-0">
                             {{ item.sets }} &times; {{ item.reps }}
                             {% if item.weight > 0 %}&bull; {{ item.weight }}kg{% else %}&bull; BW{% endif %}
                         </span>

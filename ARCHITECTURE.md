@@ -169,7 +169,6 @@ erDiagram
         int target_sets
         int target_reps
         decimal target_weight_kg
-        int rest_seconds
         json scheduled_days
         int order
     }

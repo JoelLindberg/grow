@@ -75,14 +75,9 @@ class Workout(models.Model):
     @property
     def estimated_duration_minutes(self):
         """
-        Estimates total workout duration in minutes:
-        Each set ~ 45s of execution + rest time between sets.
+        Estimates total workout duration in minutes (~105s per set).
         """
-        total_seconds = 0
-        for we in self.workout_exercises.all():
-            set_execution_seconds = we.target_sets * 45
-            rest_seconds = max(0, we.target_sets - 1) * we.rest_seconds
-            total_seconds += (set_execution_seconds + rest_seconds)
+        total_seconds = self.total_sets * 105
         return max(15, round(total_seconds / 60)) if self.exercise_count > 0 else 0
 
     def exercises_for_day(self, day_index):
@@ -139,10 +134,6 @@ class WorkoutExercise(models.Model):
         null=True,
         blank=True,
         help_text="Target weight in kg (optional; bodyweight if blank or 0).",
-    )
-    rest_seconds = models.PositiveIntegerField(
-        default=60,
-        help_text="Rest time in seconds between sets (default: 60s).",
     )
     scheduled_days = models.JSONField(
         default=list,

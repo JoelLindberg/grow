@@ -104,12 +104,10 @@ class WorkoutModelTests(TestCase):
             target_sets=4,
             target_reps=15,
             target_weight_kg=None,
-            rest_seconds=60,
             order=1,
         )
         self.assertTrue(we1.is_bodyweight)
         self.assertEqual(we1.weight_display, "Bodyweight")
-        self.assertEqual(we1.rest_seconds, 60)
 
         # Exercise 2: Weighted pullover
         we2 = WorkoutExercise.objects.create(
@@ -118,7 +116,6 @@ class WorkoutModelTests(TestCase):
             target_sets=3,
             target_reps=10,
             target_weight_kg=Decimal("12.50"),
-            rest_seconds=60,
             order=2,
         )
         self.assertFalse(we2.is_bodyweight)
@@ -212,7 +209,6 @@ class WorkoutWorkflowTests(TestCase):
             "target_sets": 4,
             "target_reps": 12,
             "target_weight_kg": "",
-            "rest_seconds": 60,
         }
         response = self.client.post(add_url, bw_data)
         self.assertRedirects(response, reverse("workouts:workout_edit", kwargs={"workout_id": workout.id}))
@@ -228,7 +224,6 @@ class WorkoutWorkflowTests(TestCase):
             "target_sets": 3,
             "target_reps": 10,
             "target_weight_kg": "14.5",
-            "rest_seconds": 60,
         }
         htmx_response = self.client.post(add_url, weighted_data, HTTP_HX_REQUEST="true")
         self.assertEqual(htmx_response.status_code, 200)
@@ -247,7 +242,6 @@ class WorkoutWorkflowTests(TestCase):
             target_sets=3,
             target_reps=10,
             target_weight_kg=Decimal("10.00"),
-            rest_seconds=60,
         )
 
         edit_ex_url = reverse(
@@ -261,7 +255,6 @@ class WorkoutWorkflowTests(TestCase):
             "target_sets": 4,
             "target_reps": 8,
             "target_weight_kg": "16",
-            "rest_seconds": 60,
         }
         post_response = self.client.post(edit_ex_url, update_data, HTTP_HX_REQUEST="true")
         self.assertEqual(post_response.status_code, 200)
@@ -277,7 +270,6 @@ class WorkoutWorkflowTests(TestCase):
             "target_sets": 4,
             "target_reps": 8,
             "target_weight_kg": "",
-            "rest_seconds": 60,
         }
         self.client.post(edit_ex_url, bw_update_data, HTTP_HX_REQUEST="true")
         we.refresh_from_db()
@@ -377,7 +369,6 @@ class WorkoutScheduleTests(TestCase):
             "target_sets": 4,
             "target_reps": 12,
             "target_weight_kg": "",
-            "rest_seconds": 60,
             "days": ["0", "3"],
         }
         res = self.client.post(add_url, data, HTTP_HX_REQUEST="true")
@@ -395,7 +386,6 @@ class WorkoutScheduleTests(TestCase):
             "target_sets": 4,
             "target_reps": 15,
             "target_weight_kg": "",
-            "rest_seconds": 60,
             "days": ["1", "4"],
         }
         edit_res = self.client.post(edit_url, edit_data, HTTP_HX_REQUEST="true")
@@ -461,7 +451,6 @@ class WorkoutScheduleTests(TestCase):
             "target_sets": 3,
             "target_reps": 12,
             "target_weight_kg": "",
-            "rest_seconds": 60,
         }
         res = self.client.post(add_url, post_data)
         self.assertEqual(res.status_code, 302)

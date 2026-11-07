@@ -9,34 +9,14 @@
     activeTab: 'today',
     wellRested: true,
     workoutStarted: false,
-    exercises: JSON.parse(document.getElementById('today-exercises-data')?.textContent || '[]'),
-    restTimer: 90,
-    timerRunning: false,
-    timerInterval: null,
-    startTimer() {
-        if (this.timerRunning) return;
-        this.timerRunning = true;
-        this.timerInterval = setInterval(() => {
-            if (this.restTimer > 0) {
-                this.restTimer--;
-            } else {
-                this.stopTimer();
-                this.restTimer = 90;
-                if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
-            }
-        }, 1000);
-    },
-    stopTimer() {
-        this.timerRunning = false;
-        clearInterval(this.timerInterval);
-    }
+    exercises: JSON.parse(document.getElementById('today-exercises-data')?.textContent || '[]')
 }">
 
     <!-- Clean Member Header -->
     <section class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-2">
         <div class="space-y-1">
             <p class="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                {{ today_day_name }}Overview
+                {{ today_day_name }} Overview
             </p>
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
                 Welcome back, {{ request.user.username|title }}
@@ -53,43 +33,29 @@
         <!-- Column 1 & 2: Primary Workout Flow -->
         <div class="md:col-span-2 space-y-5">
 
-            <!-- Today's Workout Card -->
-            <div class="card-theme p-5 sm:p-6 space-y-5">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="space-y-1">
-                        <span class="text-xs font-semibold text-accent">
-                            Today's Session &bull; {{ today_day_name }}
-                        </span>
-                        <h2 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-                            {{ today_workout_title }}
-                        </h2>
-                        {% if today_has_workouts %}
-                        <p class="text-xs text-[var(--text-muted)] tabular-nums">
-                            <span x-text="exercises.length"></span> exercises scheduled &bull; 90s default rest
-                        </p>
-                        {% else %}
-                        <p class="text-xs text-[var(--text-muted)]">
-                            No workout assigned for {{ today_day_name }}. Rest or pick a routine.
-                        </p>
-                        {% endif %}
-                    </div>
-
-                    <!-- Rest Timer Widget -->
-                    <div class="text-right shrink-0">
-                        <div class="inline-flex flex-col items-center px-3 py-2 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)]">
-                            <span class="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">Rest</span>
-                            <span class="text-lg font-mono font-bold text-accent tabular-nums"
-                                x-text="`${Math.floor(restTimer/60)}:${(restTimer%60).toString().padStart(2, '0')}`">1:30</span>
-                            <button @click="timerRunning ? stopTimer() : startTimer()"
-                                class="mt-1 px-2.5 py-1 text-[11px] font-semibold rounded-md badge-accent transition-colors"
-                                x-text="timerRunning ? 'Pause' : 'Start'">Start</button>
-                        </div>
-                    </div>
+            <!-- Today's Workout Section (Flat section header + single-layer exercise items) -->
+            <div class="section-theme space-y-3.5">
+                <div class="space-y-1 px-1">
+                    <span class="text-xs font-semibold text-accent">
+                        Today's Session &bull; {{ today_day_name }}
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
+                        {{ today_workout_title }}
+                    </h2>
+                    {% if today_has_workouts %}
+                    <p class="text-xs text-[var(--text-muted)] tabular-nums">
+                        <span x-text="exercises.length"></span> exercises scheduled for today
+                    </p>
+                    {% else %}
+                    <p class="text-xs text-[var(--text-muted)]">
+                        No workout assigned for {{ today_day_name }}. Rest or pick a routine.
+                    </p>
+                    {% endif %}
                 </div>
 
                 {% if today_has_workouts %}
                 <!-- Action Bar: Start / Postpone / Skip -->
-                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                <div class="flex flex-wrap items-center gap-2 px-1">
                     <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-5 text-sm gap-2">
                         <span>Start Workout</span>
                     </a>
@@ -109,20 +75,20 @@
                     </form>
                 </div>
 
-                <!-- Workout Exercise List with Tactile Counters -->
-                <div class="space-y-2.5 pt-2">
-                    <h3 class="text-xs font-semibold text-[var(--text-muted)]">Exercises</h3>
+                <!-- Workout Exercise List with Single-Layer Inset Panels -->
+                <div class="space-y-2.5 pt-1">
+                    <h3 class="text-xs font-semibold text-[var(--text-muted)] px-1">Exercises</h3>
 
                     <template x-for="ex in exercises" :key="ex.id">
-                        <div class="p-4 rounded-xl border transition-colors"
+                        <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden transition-colors"
                             :class="ex.completed
-                                ? 'bg-[var(--accent-subtle)] border-[var(--accent-border)]'
-                                : 'bg-[var(--bg-surface-elevated)] border-[var(--border-subtle)]'">
-                            <div class="flex items-center justify-between gap-3 mb-3">
+                                ? '!bg-[var(--accent-subtle)] !border-[var(--accent-border)]'
+                                : ''">
+                            <div class="p-3.5 flex items-center justify-between gap-3">
                                 <div class="flex items-center gap-3">
                                     <!-- Checkbox (44x44px touch target) -->
-                                    <button @click="ex.completed = !ex.completed; if(ex.completed) startTimer();"
-                                        class="counter-btn"
+                                    <button @click="ex.completed = !ex.completed"
+                                        class="counter-btn shrink-0"
                                         :class="ex.completed ? '!bg-[var(--accent-primary)] !text-white !border-[var(--accent-primary)]' : ''"
                                         :title="ex.completed ? 'Mark incomplete' : 'Check set complete'">
                                         <svg x-show="ex.completed" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
@@ -146,28 +112,32 @@
                                     </div>
                                 </div>
 
-                                <span class="text-[11px] font-medium px-2 py-0.5 rounded-md"
+                                <span class="text-[11px] font-medium px-2 py-0.5 rounded-md shrink-0"
                                     :class="ex.completed ? 'badge-accent' : 'badge-neutral'"
                                     x-text="ex.completed ? 'Done' : 'Pending'"></span>
                             </div>
 
-                            <!-- Interactive Rep & Weight +/- Touch Counters -->
-                            <div class="flex items-center justify-between border-t border-[var(--border-subtle)] pt-3 text-xs tabular-nums">
+                            <!-- Vertically Stacked Touch Counters on Mobile -->
+                            <div class="divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)] grid grid-cols-1 sm:grid-cols-2 text-xs tabular-nums">
                                 <!-- Reps Controller -->
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-[var(--text-muted)] font-medium mr-1">Reps</span>
-                                    <button @click="if (ex.reps > 1) ex.reps--" class="counter-btn">-</button>
-                                    <span class="w-7 text-center font-semibold text-sm" x-text="ex.reps"></span>
-                                    <button @click="ex.reps++" class="counter-btn">+</button>
+                                <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
+                                    <span class="text-[var(--text-muted)] font-medium">Reps</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button @click="if (ex.reps > 1) ex.reps--" class="counter-btn">-</button>
+                                        <span class="w-9 text-center font-semibold text-sm text-[var(--text-primary)]" x-text="ex.reps"></span>
+                                        <button @click="ex.reps++" class="counter-btn">+</button>
+                                    </div>
                                 </div>
 
                                 <!-- Weight Controller -->
-                                <div class="flex items-center gap-1.5">
-                                    <span class="text-[var(--text-muted)] font-medium mr-1">Kg</span>
-                                    <button @click="if (ex.weight >= 2.5) ex.weight -= 2.5; else if(ex.weight > 0) ex.weight = 0;"
-                                        class="counter-btn">-</button>
-                                    <span class="w-10 text-center font-semibold text-sm" x-text="ex.weight"></span>
-                                    <button @click="ex.weight += 2.5" class="counter-btn">+</button>
+                                <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
+                                    <span class="text-[var(--text-muted)] font-medium">Weight (kg)</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button @click="if (ex.weight >= 2.5) ex.weight -= 2.5; else if(ex.weight > 0) ex.weight = 0;"
+                                            class="counter-btn">-</button>
+                                        <span class="w-11 text-center font-semibold text-sm text-[var(--text-primary)]" x-text="ex.weight"></span>
+                                        <button @click="ex.weight += 2.5" class="counter-btn">+</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -182,8 +152,8 @@
                     </a>
                 </div>
                 {% else %}
-                <!-- Rest Day State -->
-                <div class="p-6 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-center space-y-3">
+                <!-- Rest Day State (Single-layer panel) -->
+                <div class="card-theme p-6 text-center space-y-3">
                     <div class="w-10 h-10 rounded-xl badge-accent flex items-center justify-center mx-auto">
                         <span class="theme-mood-icon theme-mood-recovery" aria-hidden="true"></span>
                     </div>
@@ -209,9 +179,9 @@
         <!-- Column 3: Secondary Widgets -->
         <div class="space-y-5">
 
-            <!-- Workouts Summary Card -->
-            <div class="card-theme p-5 space-y-3.5">
-                <div class="flex items-center justify-between">
+            <!-- Workouts Summary Section (Flat header + single-layer inset list) -->
+            <div class="section-theme space-y-2.5">
+                <div class="flex items-center justify-between px-1">
                     <h3 class="font-semibold text-sm text-[var(--text-primary)]">Workouts</h3>
                     <a href="{% url 'workouts:workout_create' %}" class="text-xs font-medium text-accent hover:underline">
                         + New
@@ -219,10 +189,10 @@
                 </div>
 
                 {% if workouts %}
-                <div class="space-y-2">
+                <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
                     {% for p in workouts|slice:":3" %}
                     <a href="{% url 'workouts:workout_edit' p.id %}"
-                        class="block p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--border-medium)] transition-colors">
+                        class="block p-3.5 hover:bg-[var(--bg-surface-elevated)] transition-colors">
                         <div class="flex items-center justify-between gap-2">
                             <span class="text-xs font-semibold text-[var(--text-primary)]">{{ p.name }}</span>
                             <span class="text-[11px] text-[var(--text-muted)] tabular-nums">{{ p.exercise_count }} ex &bull; ~{{ p.estimated_duration_minutes }}m</span>
@@ -231,9 +201,9 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-xs text-[var(--text-muted)]">
+                <div class="card-theme p-3.5 text-xs text-[var(--text-muted)]">
                     No workouts created yet. Build routines to organize your training.
-                </p>
+                </div>
                 {% endif %}
 
                 <a href="{% url 'workouts:workout_list' %}"
@@ -242,38 +212,40 @@
                 </a>
             </div>
 
-            <!-- Plant-Based Nutrition Card -->
-            <div class="card-theme p-5 space-y-3.5">
-                <div class="flex items-center justify-between">
+            <!-- Plant-Based Nutrition Section (Single-layer inset panel) -->
+            <div class="section-theme space-y-2.5">
+                <div class="flex items-center justify-between px-1">
                     <h3 class="font-semibold text-sm text-[var(--text-primary)]">Plant-Based Fuel</h3>
                     <span class="text-xs font-semibold text-accent tabular-nums">112g / 140g</span>
                 </div>
 
-                <!-- Daily Protein Progress Bar -->
-                <div>
-                    <div class="w-full h-2 rounded-full bg-[var(--bg-surface-elevated)] overflow-hidden">
-                        <div class="h-full rounded-full bg-[var(--accent-primary)]" style="width: 80%;"></div>
+                <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                    <!-- Daily Protein Progress Bar -->
+                    <div class="p-3.5">
+                        <div class="w-full h-2 rounded-full bg-[var(--bg-surface-elevated)] overflow-hidden">
+                            <div class="h-full rounded-full bg-[var(--accent-primary)]" style="width: 80%;"></div>
+                        </div>
+                        <p class="text-[11px] text-[var(--text-muted)] mt-1.5 flex justify-between tabular-nums">
+                            <span>80% of daily target</span>
+                            <span>28g remaining</span>
+                        </p>
                     </div>
-                    <p class="text-[11px] text-[var(--text-muted)] mt-1.5 flex justify-between tabular-nums">
-                        <span>80% of daily target</span>
-                        <span>28g remaining</span>
-                    </p>
-                </div>
 
-                <!-- Amino Acid Pairing -->
-                <div class="p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] space-y-1.5">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="font-semibold text-[var(--text-primary)]">Complete Protein Pairing</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md font-medium badge-success">Optimal</span>
+                    <!-- Amino Acid Pairing -->
+                    <div class="p-3.5 space-y-1">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-semibold text-[var(--text-primary)]">Complete Protein Pairing</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-md font-medium badge-success">Optimal</span>
+                        </div>
+                        <p class="text-xs text-[var(--text-muted)] leading-relaxed">
+                            <strong class="text-[var(--text-secondary)]">Red Lentil Dahl + Brown Rice</strong> forms a complete amino acid chain (lysine + methionine).
+                        </p>
                     </div>
-                    <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                        <strong class="text-[var(--text-secondary)]">Red Lentil Dahl + Brown Rice</strong> forms a complete amino acid chain (lysine + methionine).
-                    </p>
                 </div>
             </div>
 
             <!-- Mind & Recovery Card -->
-            <div class="card-theme p-5 space-y-3">
+            <div class="card-theme p-3.5 sm:p-4 space-y-2.5">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="theme-mood-icon text-[var(--accent-primary)]"

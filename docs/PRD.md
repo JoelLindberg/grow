@@ -13,11 +13,12 @@
 
 ### 1. Workout Planning
 
-* Defines thestructure of a `Workout`
+* Focuses on **classic bodybuilding exercises**, starting primarily with exercises that can be performed at home using **dumbbells, bodyweight, and resistance bands** (plus floor core tools like the ab wheel).
+* Defines the structure of a `Workout`
     - Exercise
         - Sets
         - Reps
-        - Rest
+        - Weight (kg, optional — defaults to bodyweight)
     - A `Workout` is defined by a name and the exercises that make up the `Workout`.
     - There can be as many `Workouts` as the user wants.
     - `Workouts` can be created, edited, and deleted by the user.

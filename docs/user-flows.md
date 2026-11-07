@@ -28,7 +28,6 @@ Intended usage workflow for editing a workout:
         * Select an exercise from the exercise database
         * Set the number of sets
         * Set the number of reps per set
-        * Set the rest time between sets (optional) default 60 seconds
         * Set the weight (optional) if not set, then the exercise is bodyweight
         * Click on add exercise
         * Select days of the week for the exercise to be scheduled on (this will update the calendar view). It should be a multi select. It should allow multiple exercises on a single day so that morning and evening splits are possible. A user could for example select Monday for "Bench Press" and also Monday for "Squat" resulting in two exercises on Monday.
@@ -38,7 +37,6 @@ Intended usage workflow for editing a workout:
         * Click on edit exercise
         * Change the number of sets
         * Change the number of reps per set
-        * Change the rest time between sets
         * Change the weight
         * Change the days of the week for the exercise to be scheduled on (this will update the calendar view). Exactly the same ui as when adding an exercise.
         * Click on save exercise

@@ -25,9 +25,9 @@
             </div>
         </div>
 
-        <!-- Workout Metadata Card (Editable) -->
-        <div class="card-theme p-5 sm:p-6 space-y-4" x-data="{ editingMeta: false }">
-            <div x-show="!editingMeta" class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <!-- Workout Metadata Section (Flat on canvas; panel only when editing) -->
+        <div class="section-theme space-y-3" x-data="{ editingMeta: false }">
+            <div x-show="!editingMeta" class="flex items-start justify-between gap-3 px-1">
                 <div class="space-y-1">
                     <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Workout Editor</span>
                     <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -46,12 +46,12 @@
                 </button>
             </div>
 
-            <!-- Edit Metadata Form -->
+            <!-- Edit Metadata Form (Single-layer inset panel) -->
             <form x-show="editingMeta" style="display: none;" method="post" action="{% url 'workouts:workout_edit' workout.id %}"
                 hx-post="{% url 'workouts:workout_edit' workout.id %}"
                 hx-target="#save-status"
                 @submit="editingMeta = false"
-                class="space-y-4 pt-2">
+                class="card-theme p-3.5 sm:p-5 space-y-4">
                 {% csrf_token %}
                 <div class="space-y-1.5">
                     <label class="block text-xs font-semibold text-[var(--text-secondary)]">Workout Title</label>
@@ -95,8 +95,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- Column: Exercise List (Lg: 7 cols) -->
-        <div class="lg:col-span-7 space-y-4">
-            <div class="flex items-center justify-between">
+        <div class="lg:col-span-7 section-theme space-y-3">
+            <div class="flex items-center justify-between px-1">
                 <h2 class="text-base font-semibold text-[var(--text-primary)]">
                     Configured Exercises
                 </h2>
@@ -110,137 +110,125 @@
         </div>
 
         <!-- Column: Add Exercise Builder (Lg: 5 cols) -->
-        <div class="lg:col-span-5 space-y-4">
-            <div class="card-theme p-5 sm:p-6 space-y-5 sticky top-20"
+        <div class="lg:col-span-5 section-theme space-y-3">
+            <div class="space-y-3 sticky top-20"
                 x-data="{
                     exerciseId: '',
-                    selectedMuscle: '',
                     sets: 3,
                     reps: 10,
                     weight: null,
-                    rest: 60,
-                    days: [],
-                    setQuickWeight(w) { this.weight = w; },
-                    setQuickRest(r) { this.rest = r; }
+                    days: []
                 }">
 
-                <div class="space-y-1 pb-3 border-b border-[var(--border-subtle)]">
-                    <h3 class="text-base font-bold text-[var(--text-primary)]">
+                <div class="space-y-0.5 px-1">
+                    <h3 class="text-base font-semibold text-[var(--text-primary)]">
                         Add Exercise
                     </h3>
                     <p class="text-xs text-[var(--text-muted)]">
-                        Select an exercise, configure target prescription, and pick scheduled days.
+                        Select an exercise, configure sets, reps, and weight, and pick scheduled days.
                     </p>
                 </div>
 
                 <form method="post" action="{% url 'workouts:workout_exercise_add' workout.id %}"
                     hx-post="{% url 'workouts:workout_exercise_add' workout.id %}"
                     hx-target="#workout-exercise-list"
-                    class="space-y-4">
+                    class="space-y-3">
                     {% csrf_token %}
 
-                    <!-- Exercise Dropdown from Catalog -->
-                    <div class="space-y-1.5">
-                        <label for="id_exercise_select" class="block text-xs font-semibold text-[var(--text-secondary)]">
-                            Exercise <span class="text-accent">*</span>
-                        </label>
-                        <select name="exercise" id="id_exercise_select" required
-                            x-model="exerciseId"
-                            class="input-gym cursor-pointer">
-                            <option value="">-- Choose Exercise --</option>
-                            {% for ex in available_exercises %}
-                            <option value="{{ ex.id }}">{{ ex.name }} ({{ ex.muscle_group }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Prescriptions (Sets, Reps, Weight, Rest) -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <!-- Sets -->
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] text-center">
-                                Sets
+                    <!-- Single-Layer Inset Group Panel (Exercise + Sets + Reps + Weight + Days) -->
+                    <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                        <!-- Exercise Dropdown from Catalog -->
+                        <div class="p-3.5 space-y-1.5">
+                            <label for="id_exercise_select" class="block text-xs font-semibold text-[var(--text-secondary)]">
+                                Exercise <span class="text-accent">*</span>
                             </label>
-                            <div class="flex items-center gap-1">
+                            <select name="exercise" id="id_exercise_select" required
+                                x-model="exerciseId"
+                                class="input-gym cursor-pointer">
+                                <option value="">-- Choose Exercise --</option>
+                                {% for ex in available_exercises %}
+                                <option value="{{ ex.id }}">{{ ex.name }} ({{ ex.muscle_group }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Sets Row -->
+                        <div class="flex items-center justify-between gap-3 p-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-[var(--text-primary)]">Sets</label>
+                                <span class="text-[11px] text-[var(--text-muted)]">Working sets</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
                                 <button type="button" @click="if (sets > 1) sets--" class="counter-btn">-</button>
                                 <input type="number" name="target_sets" x-model.number="sets" min="1" max="30"
-                                    class="input-gym text-center font-semibold text-sm h-11 p-1">
+                                    class="input-gym !w-20 text-center font-semibold text-base !h-11 !py-1 !px-2">
                                 <button type="button" @click="if (sets < 30) sets++" class="counter-btn">+</button>
                             </div>
                         </div>
 
-                        <!-- Reps -->
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] text-center">
-                                Reps
-                            </label>
-                            <div class="flex items-center gap-1">
+                        <!-- Reps Row -->
+                        <div class="flex items-center justify-between gap-3 p-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-[var(--text-primary)]">Reps</label>
+                                <span class="text-[11px] text-[var(--text-muted)]">Repetitions per set</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
                                 <button type="button" @click="if (reps > 1) reps--" class="counter-btn">-</button>
                                 <input type="number" name="target_reps" x-model.number="reps" min="1" max="200"
-                                    class="input-gym text-center font-semibold text-sm h-11 p-1">
+                                    class="input-gym !w-20 text-center font-semibold text-base !h-11 !py-1 !px-2">
                                 <button type="button" @click="if (reps < 200) reps++" class="counter-btn">+</button>
                             </div>
                         </div>
 
-                        <!-- Weight (kg) -->
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] text-center">
-                                Weight (kg)
-                            </label>
-                            <div class="flex items-center gap-1">
-                                <button type="button" @click="if (weight && weight >= 2.5) weight -= 2.5; else if(weight && weight > 0) weight = 0;" class="counter-btn">-</button>
-                                <input type="number" name="target_weight_kg" x-model.number="weight" min="0" max="500" step="0.5"
-                                    placeholder="BW"
-                                    class="input-gym text-center font-semibold text-sm h-11 p-1">
-                                <button type="button" @click="weight = (weight ? weight + 2.5 : 2.5)" class="counter-btn">+</button>
-                            </div>
-                        </div>
-
-                        <!-- Rest (sec) -->
-                        <div class="space-y-1">
-                            <label class="block text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] text-center">
-                                Rest (sec)
-                            </label>
-                            <div class="flex items-center gap-1">
-                                <button type="button" @click="if (rest >= 15) rest -= 15" class="counter-btn">-</button>
-                                <input type="number" name="rest_seconds" x-model.number="rest" min="0" max="600" step="5"
-                                    class="input-gym text-center font-semibold text-sm h-11 p-1">
-                                <button type="button" @click="if (rest <= 585) rest += 15" class="counter-btn">+</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Weight Helpers -->
-                    <div class="flex items-center justify-between text-xs pt-1">
-                        <span class="text-[11px] text-[var(--text-muted)]">Quick weight:</span>
-                        <div class="flex items-center gap-1 flex-wrap tabular-nums">
-                            <button type="button" @click="weight = null"
-                                class="px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors"
-                                :class="!weight ? 'badge-accent' : 'badge-neutral'">Bodyweight</button>
-                            <button type="button" @click="weight = 10" class="px-2 py-0.5 rounded-md badge-neutral text-[11px]">10kg</button>
-                            <button type="button" @click="weight = 20" class="px-2 py-0.5 rounded-md badge-neutral text-[11px]">20kg</button>
-                            <button type="button" @click="weight = 40" class="px-2 py-0.5 rounded-md badge-neutral text-[11px]">40kg</button>
-                        </div>
-                    </div>
-
-                    <!-- Scheduled Days Selector -->
-                    <div class="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
-                        <div class="flex items-center justify-between">
-                            <label class="block text-xs font-semibold text-[var(--text-secondary)]">
-                                Schedule Days
-                            </label>
-                            <span class="text-[11px] text-[var(--text-muted)]">Optional</span>
-                        </div>
-
-                        <div class="grid grid-cols-7 gap-1">
-                            {% for day_val, day_name in day_choices %}
-                            <label class="cursor-pointer">
-                                <input type="checkbox" name="days" value="{{ day_val }}" class="sr-only peer">
-                                <div class="h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex flex-col items-center justify-center text-xs font-semibold text-[var(--text-secondary)] peer-checked:bg-[var(--accent-primary)] peer-checked:text-white peer-checked:border-[var(--accent-primary)] transition-colors">
-                                    <span>{{ day_name }}</span>
+                        <!-- Weight (kg) Row -->
+                        <div class="p-3.5 space-y-2.5">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-[var(--text-primary)]">Weight (kg)</label>
+                                    <span class="text-[11px] text-[var(--text-muted)]">Blank or 0 for bodyweight</span>
                                 </div>
-                            </label>
-                            {% endfor %}
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <button type="button" @click="if (weight && weight >= 2.5) weight -= 2.5; else if(weight && weight > 0) weight = 0;" class="counter-btn">-</button>
+                                    <input type="number" name="target_weight_kg" x-model.number="weight" min="0" max="500" step="0.5"
+                                        placeholder="BW"
+                                        class="input-gym !w-20 text-center font-semibold text-base !h-11 !py-1 !px-2">
+                                    <button type="button" @click="weight = (weight ? weight + 2.5 : 2.5)" class="counter-btn">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Quick Weight Helpers -->
+                            <div class="flex items-center justify-between text-xs pt-0.5">
+                                <span class="text-[11px] text-[var(--text-muted)]">Presets:</span>
+                                <div class="flex items-center gap-1 flex-wrap tabular-nums">
+                                    <button type="button" @click="weight = null"
+                                        class="px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors"
+                                        :class="!weight ? 'badge-accent' : 'badge-neutral'">Bodyweight</button>
+                                    <button type="button" @click="weight = 5" class="px-2 py-0.5 rounded-md badge-neutral text-[11px]">5kg</button>
+                                    <button type="button" @click="weight = 10" class="px-2 py-0.5 rounded-md badge-neutral text-[11px]">10kg</button>
+                                    <button type="button" @click="weight = 20" class="px-2 py-0.5 rounded-md badge-neutral text-[11px]">20kg</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scheduled Days Selector -->
+                        <div class="p-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-semibold text-[var(--text-secondary)]">
+                                    Schedule Days
+                                </label>
+                                <span class="text-[11px] text-[var(--text-muted)]">Optional</span>
+                            </div>
+
+                            <div class="grid grid-cols-7 gap-1">
+                                {% for day_val, day_name in day_choices %}
+                                <label class="cursor-pointer">
+                                    <input type="checkbox" name="days" value="{{ day_val }}" class="sr-only peer">
+                                    <div class="h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex flex-col items-center justify-center text-xs font-semibold text-[var(--text-secondary)] peer-checked:bg-[var(--accent-primary)] peer-checked:text-white peer-checked:border-[var(--accent-primary)] transition-colors">
+                                        <span>{{ day_name }}</span>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
 

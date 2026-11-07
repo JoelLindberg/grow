@@ -47,7 +47,7 @@
     <header class="sticky top-0 z-40" @click.outside="mobileMenuOpen = false">
         <!-- Top Bar (Apple Liquid Glass) -->
         <div class="surface-glass border-b border-[var(--border-subtle)]">
-            <div class="max-w-3xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+            <div class="max-w-3xl mx-auto px-2.5 sm:px-6 py-2.5 flex items-center justify-between gap-2">
             <!-- Brand & Motto -->
             <a href="{% url 'home' %}" class="flex items-center gap-2.5 group min-h-[44px] shrink-0">
                 <div class="w-9 h-9 rounded-xl badge-accent flex items-center justify-center transition-transform group-active:scale-95">
@@ -151,7 +151,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 translate-y-0"
             x-transition:leave-end="opacity-0 -translate-y-2"
-            class="md:hidden absolute top-full inset-x-0 z-50 px-4 pt-2"
+            class="md:hidden absolute top-full inset-x-0 z-50 px-2.5 sm:px-6 pt-2"
             style="display: none;">
             <nav class="card-theme-glass p-2 space-y-1 max-w-3xl mx-auto" aria-label="Mobile navigation">
                 <a href="{% url 'dashboard' %}"
@@ -201,13 +201,13 @@
     </header>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-6">
+    <main class="flex-1 max-w-3xl w-full mx-auto px-2.5 sm:px-6 py-4 sm:py-6">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Minimal Footer -->
     <footer class="mt-auto border-t border-[var(--border-subtle)] py-6 text-center text-xs text-[var(--text-muted)]">
-        <div class="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div class="max-w-3xl mx-auto px-2.5 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p class="text-[var(--text-secondary)]">"The stronger you get, the kinder you become."</p>
             <p>GROW <span class="text-[var(--text-secondary)] font-mono">{{ APP_VERSION }}</span> &copy; 2026</p>
         </div>

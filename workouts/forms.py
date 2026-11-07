@@ -60,7 +60,6 @@ class WorkoutExerciseForm(forms.ModelForm):
             "target_sets",
             "target_reps",
             "target_weight_kg",
-            "rest_seconds",
         ]
         widgets = {
             "exercise": forms.Select(
@@ -95,21 +94,11 @@ class WorkoutExerciseForm(forms.ModelForm):
                     "id": "id_target_weight_kg",
                 }
             ),
-            "rest_seconds": forms.NumberInput(
-                attrs={
-                    "class": "input-gym text-center font-bold text-lg",
-                    "min": 0,
-                    "max": 600,
-                    "step": 5,
-                    "id": "id_rest_seconds",
-                }
-            ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["exercise"].queryset = Exercise.objects.all().order_by("muscle_group", "name")
-        self.fields["rest_seconds"].initial = 60
         self.fields["target_weight_kg"].required = False
         if self.instance and self.instance.pk:
             self.fields["days"].initial = [str(d) for d in self.instance.scheduled_days]
