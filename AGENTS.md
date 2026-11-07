@@ -13,7 +13,8 @@ GROW is a mobile-first Progressive Web App (PWA) for workout logging and plant-b
    - **HTMX**: Server communication and partial HTML swaps (saving sets, completing workouts, dashboard widgets).
    - Do NOT introduce React/Vue/SPA frameworks.
 3. **Offline Resilience**: Workout logging must work in poor gym connectivity (cache shell + localStorage sync).
-4. **Design Philosophy**: Mobile-first, high-contrast dark mode, large touch targets (minimum 44x44px for gym usability).
+4. **Design Philosophy**: Mobile-first, large touch targets (minimum 44x44px for gym usability).
+   - See more under `docs/DESIGN.md`
 
 ## Coding Conventions
 * Try not to write *clever* Pythonista-style code. Write boring, explicit code instead.

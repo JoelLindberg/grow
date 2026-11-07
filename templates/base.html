@@ -1,16 +1,35 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" x-data="{ season: localStorage.getItem('grow_season') || 'autumn' }" :data-season="season">
+<html lang="en"
+    x-data="{
+        theme: localStorage.getItem('grow_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+        mobileMenuOpen: false,
+        toggleTheme() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('grow_theme', this.theme);
+        }
+    }"
+    :data-theme="theme"
+    @keydown.escape.window="mobileMenuOpen = false">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}GROW — Strength & Kindness{% endblock %}</title>
 
-    <!-- Tailwind CSS (dev CDN — utility styling) -->
+    <!-- Prevent theme flash before Alpine initializes -->
+    <script>
+        (function () {
+            var saved = localStorage.getItem('grow_theme');
+            var initial = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            document.documentElement.setAttribute('data-theme', initial);
+        })();
+    </script>
+
+    <!-- Tailwind CSS (utility layout styling) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Base Seasonal Theme & Gym Usability Tokens -->
+    <!-- Centralized Seasonal Theme, Tinted Light/Dark Tokens & Liquid Glass -->
     <link rel="stylesheet" href="{% static 'css/theme.css' %}">
 
     <!-- HTMX (Server interactivity & partial swaps) -->
@@ -22,143 +41,175 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="min-h-screen flex flex-col antialiased selection:bg-orange-500 selection:text-white">
+<body class="min-h-screen flex flex-col antialiased overflow-x-hidden">
 
-    <!-- Sticky Top Navigation Bar -->
-    <header
-        class="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-glass)] backdrop-blur-md">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+    <!-- Sticky Top Navigation Wrapper -->
+    <header class="sticky top-0 z-40" @click.outside="mobileMenuOpen = false">
+        <!-- Top Bar (Apple Liquid Glass) -->
+        <div class="surface-glass border-b border-[var(--border-subtle)]">
+            <div class="max-w-3xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
             <!-- Brand & Motto -->
-            <a href="{% url 'home' %}" class="flex items-center gap-2.5 group">
-                <div
-                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-600 flex items-center justify-center shadow-lg shadow-orange-950/50 group-hover:scale-105 transition-transform">
-                    <!-- Oak Leaf / Sprout SVG -->
-                    <svg class="w-6 h-6 text-amber-100" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-                        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-                    </svg>
+            <a href="{% url 'home' %}" class="flex items-center gap-2.5 group min-h-[44px] shrink-0">
+                <div class="w-9 h-9 rounded-xl badge-accent flex items-center justify-center transition-transform group-active:scale-95">
+                    <span class="theme-logo-icon" aria-hidden="true"></span>
                 </div>
-                <div>
-                    <span class="font-extrabold text-xl tracking-tight text-[var(--text-primary)]">GROW</span>
-                    <span
-                        class="hidden sm:inline-block text-xs font-medium text-[var(--text-muted)] ml-2 border-l border-[var(--border-subtle)] pl-2">Strength
-                        &amp; Kindness</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-bold text-lg tracking-tight text-[var(--text-primary)]">GROW</span>
+                    <span class="hidden sm:inline-block text-xs font-normal text-[var(--text-muted)]">
+                        Strength &amp; Kindness
+                    </span>
                 </div>
             </a>
 
-            <!-- Season Switcher Dropdown / Quick Selector (Alpine.js) -->
-            <div class="flex items-center gap-2" x-data="{ open: false }">
-                <div class="relative">
-                    <button @click="open = !open"
-                        class="btn-gym h-10 px-3 text-xs font-semibold rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-active)] flex items-center gap-1.5 transition-colors"
-                        title="Change season theme">
-                        <!-- Autumn Oak / Leaf Icon -->
-                        <span class="inline-block w-2.5 h-2.5 rounded-full" :class="{
-                                  'bg-orange-500 shadow-[0_0_8px_#f97316]': season === 'autumn',
-                                  'bg-sky-400 shadow-[0_0_8px_#38bdf8]': season === 'winter',
-                                  'bg-emerald-400 shadow-[0_0_8px_#4ade80]': season === 'spring',
-                                  'bg-yellow-400 shadow-[0_0_8px_#facc15]': season === 'summer'
-                              }"></span>
-                        <span class="capitalize" x-text="season">Autumn</span>
-                        <svg class="w-3.5 h-3.5 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    <!-- Dropdown Menu -->
-                    <div x-show="open" @click.outside="open = false"
-                        x-transition:enter="transition ease-out duration-150"
-                        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                        x-transition:leave="transition ease-in duration-100"
-                        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                        class="absolute right-0 mt-1.5 w-44 rounded-xl card-theme p-1.5 shadow-2xl z-50 border border-[var(--border-medium)] bg-[var(--bg-surface-elevated)]"
-                        style="display: none;">
-                        <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                            Theme Season</div>
-
-                        <button @click="season = 'autumn'; localStorage.setItem('grow_season', 'autumn'); open = false"
-                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
-                            :class="season === 'autumn' ? 'bg-orange-500/20 text-orange-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-stone-800'">
-                            <span class="flex items-center gap-2">🍁 Autumn (Oak &amp; Maple)</span>
-                            <span x-show="season === 'autumn'" class="text-orange-400 text-xs">●</span>
-                        </button>
-
-                        <button @click="season = 'winter'; localStorage.setItem('grow_season', 'winter'); open = false"
-                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
-                            :class="season === 'winter' ? 'bg-sky-500/20 text-sky-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-slate-800'">
-                            <span class="flex items-center gap-2">❄️ Winter (Frost &amp; Ice)</span>
-                            <span x-show="season === 'winter'" class="text-sky-400 text-xs">●</span>
-                        </button>
-
-                        <button @click="season = 'spring'; localStorage.setItem('grow_season', 'spring'); open = false"
-                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
-                            :class="season === 'spring' ? 'bg-emerald-500/20 text-emerald-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-emerald-950/40'">
-                            <span class="flex items-center gap-2">🌱 Spring (Sprout &amp; Moss)</span>
-                            <span x-show="season === 'spring'" class="text-emerald-400 text-xs">●</span>
-                        </button>
-
-                        <button @click="season = 'summer'; localStorage.setItem('grow_season', 'summer'); open = false"
-                            class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-colors"
-                            :class="season === 'summer' ? 'bg-yellow-500/20 text-yellow-400 font-semibold' : 'text-[var(--text-secondary)] hover:bg-yellow-950/40'">
-                            <span class="flex items-center gap-2">☀️ Summer (Sun &amp; Azure)</span>
-                            <span x-show="season === 'summer'" class="text-yellow-400 text-xs">●</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Auth Navigation (Member state) -->
+            <!-- Desktop Navigation & Controls -->
+            <div class="flex items-center gap-1.5">
                 {% if user.is_authenticated %}
-                <a href="{% url 'dashboard' %}"
-                    class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    Dashboard
-                </a>
-                <a href="{% url 'workouts:workout_list' %}"
-                    class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    Workouts
-                </a>
-                <a href="{% url 'workouts:schedule' %}"
-                    class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    Schedule
-                </a>
-                <a href="{% url 'workouts:workout_history' %}"
-                    class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    History
-                </a>
-                <span
-                    class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-orange-400 bg-orange-950/30 border border-orange-500/20 rounded-lg">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    {{ user.username }}
-                </span>
-                <form method="post" action="{% url 'logout' %}" class="inline m-0 p-0">
+                <nav class="hidden md:flex items-center gap-1" aria-label="Main navigation">
+                    <a href="{% url 'dashboard' %}"
+                        class="btn-gym px-3 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                        Today
+                    </a>
+                    <a href="{% url 'workouts:workout_list' %}"
+                        class="btn-gym px-3 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                        Workouts
+                    </a>
+                    <a href="{% url 'workouts:schedule' %}"
+                        class="btn-gym px-3 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                        Schedule
+                    </a>
+                    <a href="{% url 'workouts:workout_history' %}"
+                        class="btn-gym px-3 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                        History
+                    </a>
+                </nav>
+                {% endif %}
+
+                <!-- Light / Dark Theme Toggle (Min 44x44px target) -->
+                <button type="button" @click="toggleTheme()"
+                    class="btn-gym btn-secondary-gym px-2.5 text-xs font-medium gap-1.5"
+                    :title="theme === 'dark' ? 'Switch to Light theme' : 'Switch to Dark theme'"
+                    aria-label="Toggle color theme">
+                    <!-- Sun icon (shown in Dark mode to switch to Light) -->
+                    <svg x-show="theme === 'dark'" class="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <!-- Moon icon (shown in Light mode to switch to Dark) -->
+                    <svg x-show="theme !== 'dark'" class="w-4 h-4 text-[var(--text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <span class="hidden md:inline capitalize" x-text="theme">Light</span>
+                </button>
+
+                {% if user.is_authenticated %}
+                <!-- Desktop Sign Out -->
+                <form method="post" action="{% url 'logout' %}" class="hidden md:inline m-0 p-0">
                     {% csrf_token %}
                     <button type="submit"
-                        class="btn-gym h-10 px-3 text-xs font-semibold text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                        class="btn-gym px-2.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                         title="Sign out of GROW">
                         Sign Out
                     </button>
                 </form>
+
+                <!-- Mobile Collapsible Menu Button (3 Stacked Horizontal Lines, Min 44x44px) -->
+                <button type="button"
+                    @click="mobileMenuOpen = !mobileMenuOpen"
+                    class="md:hidden btn-gym btn-secondary-gym p-2.5 text-[var(--text-primary)]"
+                    :aria-expanded="mobileMenuOpen.toString()"
+                    aria-controls="mobile-glass-menu"
+                    aria-label="Toggle navigation menu">
+                    <!-- 3 Stacked Horizontal Lines Icon -->
+                    <svg x-show="!mobileMenuOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <!-- Close (X) Icon -->
+                    <svg x-show="mobileMenuOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 {% else %}
                 <a href="{% url 'login' %}"
-                    class="btn-gym h-10 px-3.5 text-xs font-bold rounded-lg btn-primary-gym shadow-sm transition-transform">
+                    class="btn-gym px-3.5 text-xs font-semibold btn-primary-gym">
                     Sign In
                 </a>
                 {% endif %}
             </div>
+            </div>
         </div>
+
+        {% if user.is_authenticated %}
+        <!-- Mobile Collapsible Liquid Glass Navigation Sheet (Floats over page content) -->
+        <div id="mobile-glass-menu"
+            x-show="mobileMenuOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 -translate-y-2"
+            x-transition:enter-end="opacity-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 translate-y-0"
+            x-transition:leave-end="opacity-0 -translate-y-2"
+            class="md:hidden absolute top-full inset-x-0 z-50 px-4 pt-2"
+            style="display: none;">
+            <nav class="card-theme-glass p-2 space-y-1 max-w-3xl mx-auto" aria-label="Mobile navigation">
+                <a href="{% url 'dashboard' %}"
+                    class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition-colors">
+                    <span>Today's Session</span>
+                    <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="{% url 'workouts:workout_list' %}"
+                    class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition-colors">
+                    <span>Workouts</span>
+                    <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="{% url 'workouts:schedule' %}"
+                    class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition-colors">
+                    <span>Weekly Schedule</span>
+                    <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+                <a href="{% url 'workouts:workout_history' %}"
+                    class="w-full min-h-[44px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition-colors">
+                    <span>Workout History</span>
+                    <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+
+                <div class="pt-1 mt-1 border-t border-[var(--border-subtle)] flex items-center justify-between px-3.5 py-1.5">
+                    <span class="text-xs text-[var(--text-muted)]">
+                        Signed in as <strong class="text-[var(--text-secondary)]">{{ user.username }}</strong>
+                    </span>
+                    <form method="post" action="{% url 'logout' %}" class="inline m-0 p-0">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="btn-gym px-3 text-xs font-semibold text-[var(--status-danger)]">
+                            Sign Out
+                        </button>
+                    </form>
+                </div>
+            </nav>
+        </div>
+        {% endif %}
     </header>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6">
+    <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-6">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer with Philosophical Motto -->
+    <!-- Minimal Footer -->
     <footer class="mt-auto border-t border-[var(--border-subtle)] py-6 text-center text-xs text-[var(--text-muted)]">
-        <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p class="italic text-[var(--text-secondary)]">"The stronger you get, the kinder you become."</p>
-            <p>GROW <span class="text-[var(--text-secondary)] font-mono">{{ APP_VERSION }}</span> &copy; 2026 — Built with Django, Alpine.js &amp; HTMX</p>
+        <div class="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p class="text-[var(--text-secondary)]">"The stronger you get, the kinder you become."</p>
+            <p>GROW <span class="text-[var(--text-secondary)] font-mono">{{ APP_VERSION }}</span> &copy; 2026</p>
         </div>
     </footer>
 

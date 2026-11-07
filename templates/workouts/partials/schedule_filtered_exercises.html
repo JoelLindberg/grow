@@ -5,7 +5,7 @@
     <div class="flex items-center justify-between text-xs text-[var(--text-muted)] px-1">
         <span>
             Showing <strong>{{ filtered_exercises|length }}</strong> exercises sorted by:
-            <span class="text-orange-400 font-bold capitalize">
+            <span class="text-accent font-semibold capitalize">
                 {% if active_filter == 'latest' %}Latest Added
                 {% elif active_filter == 'oldest' %}Oldest
                 {% elif active_filter == 'least_scheduled' %}Least Scheduled (Needs Focus)
@@ -14,7 +14,7 @@
                 {% endif %}
             </span>
         </span>
-        <button type="button" @click="selectAll()" class="text-xs text-orange-400 hover:underline font-semibold">
+        <button type="button" @click="selectAll()" class="text-xs text-accent hover:underline font-medium">
             <span x-text="allSelected ? 'Deselect All' : 'Select All'">Select All</span>
         </button>
     </div>
@@ -22,20 +22,19 @@
     {% if filtered_exercises %}
     <div class="space-y-2 max-h-96 overflow-y-auto pr-1">
         {% for ex in filtered_exercises %}
-        <label class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-orange-500/50 cursor-pointer transition-colors group">
+        <label class="flex items-center justify-between p-3 rounded-xl bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] hover:border-[var(--border-medium)] cursor-pointer transition-colors">
             <div class="flex items-center gap-3">
-                <!-- Gym-touch checkbox (Min 44x44px target wrapper) -->
                 <div class="w-7 h-7 flex items-center justify-center shrink-0">
                     <input type="checkbox" name="selected_exercises" value="{{ ex.id }}"
-                        class="exercise-checkbox w-5 h-5 rounded border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] text-orange-500 accent-orange-500 cursor-pointer">
+                        class="exercise-checkbox w-5 h-5 rounded border-[var(--border-subtle)] accent-[var(--accent-primary)] cursor-pointer">
                 </div>
 
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-sm text-[var(--text-primary)] group-hover:text-orange-400 transition-colors">
+                        <span class="font-semibold text-sm text-[var(--text-primary)]">
                             {{ ex.name }}
                         </span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-surface-elevated)] text-stone-300">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded badge-neutral">
                             {{ ex.muscle_group }}
                         </span>
                     </div>
@@ -47,15 +46,13 @@
                 </div>
             </div>
 
-            <!-- Schedule Frequency Badge (Explains why in least/most scheduled filter) -->
+            <!-- Schedule Frequency Badge -->
             <div class="text-right shrink-0">
-                <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded
-                    {% if ex.schedule_count == 0 %}
-                        bg-stone-800 text-stone-400 border border-stone-700
-                    {% elif ex.schedule_count >= 3 %}
-                        bg-orange-950/60 text-orange-400 border border-orange-500/30
+                <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md tabular-nums
+                    {% if ex.schedule_count >= 3 %}
+                        badge-accent
                     {% else %}
-                        bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] border border-[var(--border-subtle)]
+                        badge-neutral
                     {% endif %}">
                     Scheduled: {{ ex.schedule_count }}x
                 </span>
@@ -64,7 +61,7 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] rounded-xl border border-dashed border-[var(--border-subtle)]">
+    <div class="p-6 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface-elevated)] rounded-xl border border-[var(--border-subtle)]">
         No exercises found for this filter.
     </div>
     {% endif %}
