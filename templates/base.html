@@ -1,28 +1,32 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en"
-    x-data="{
-        theme: localStorage.getItem('grow_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-        mobileMenuOpen: false,
-        toggleTheme() {
-            this.theme = this.theme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('grow_theme', this.theme);
-        }
-    }"
-    :data-theme="theme"
-    @keydown.escape.window="mobileMenuOpen = false">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="GROW">
+    <meta name="theme-color" content="#f7f5f3" id="meta-theme-color">
     <title>{% block title %}GROW — Strength & Kindness{% endblock %}</title>
+
+    <link rel="icon" type="image/svg+xml" href="{% static 'images/autumn/logo.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/autumn/logo.svg' %}">
 
     <!-- Prevent theme flash before Alpine initializes -->
     <script>
         (function () {
-            var saved = localStorage.getItem('grow_theme');
+            var saved = null;
+            try {
+                saved = localStorage.getItem('grow_theme');
+            } catch (e) {}
             var initial = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             document.documentElement.setAttribute('data-theme', initial);
+            var metaColor = document.getElementById('meta-theme-color');
+            if (metaColor) {
+                metaColor.setAttribute('content', initial === 'dark' ? '#201d1b' : '#f7f5f3');
+            }
         })();
     </script>
 
@@ -41,7 +45,36 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="min-h-screen flex flex-col antialiased overflow-x-hidden">
+<body class="min-h-screen flex flex-col antialiased overflow-x-hidden"
+    x-data="{
+        theme: 'light',
+        mobileMenuOpen: false,
+        init() {
+            var saved = null;
+            try {
+                saved = localStorage.getItem('grow_theme');
+            } catch (e) {}
+            this.theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            this.applyTheme();
+        },
+        toggleTheme() {
+            this.theme = this.theme === 'dark' ? 'light' : 'dark';
+            try {
+                localStorage.setItem('grow_theme', this.theme);
+            } catch (e) {}
+            this.applyTheme();
+        },
+        applyTheme() {
+            document.documentElement.setAttribute('data-theme', this.theme);
+            document.body.setAttribute('data-theme', this.theme);
+            var metaColor = document.getElementById('meta-theme-color');
+            if (metaColor) {
+                metaColor.setAttribute('content', this.theme === 'dark' ? '#201d1b' : '#f7f5f3');
+            }
+        }
+    }"
+    :data-theme="theme"
+    @keydown.escape.window="mobileMenuOpen = false">
 
     <!-- Sticky Top Navigation Wrapper -->
     <header class="sticky top-0 z-40" @click.outside="mobileMenuOpen = false">
