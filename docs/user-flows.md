@@ -1,27 +1,60 @@
 # UX workflows
-    
-## Workout
-Intended usage workflow for performing a workout:
+
+## Dashboard
 
 1. Login
-2. You will see a dashboard with widgets for workouts, meals, and progress
-3. Pressing a widget will take you to the corresponding view
-4. The workout view shows the workouts scheduled for today
+2. You will see a dashboard with widgets:
+    - Workouts
+      - Today's Workouts
+        - A "Start Workout" button is displayed next to each scheduled workout
+        - If there are no workouts scheduled for today, the user will see a message saying "No workouts scheduled for today"
+        - If all `Workouts` have been marked as completed for the given day the widget should display "All workouts completed for today"
+      - Edit Workouts
+        - Takes you to the full `Workouts` view where you can edit, create or delete workouts
+    - Meals
+      - Today's Meals
+      - Edit Meals
+        - Leave this blank for now.
+    - Weekly Schedule
+      - A very compact overview of your workouts for the week.
+        - Show the days that have scheduled `Workouts`
+        - Show the `Workouts` count for the scheduled days
+      - Edit Schedule
+        - Takes you to the full `Schedule` view where you can add, remove and clear all workouts from the weekly schedule.
+    - Workout History
+      - How many workouts have been completed and what the completion rate is (percentage)
+3. If you decide not to click on any of the above widgets you can also navigate to the full `Workouts`, `Meals`, `Weekly Schedule` and `Workout History` views using the navigation menu.
+
+
+## Today's Workout
+Intended usage workflow for performing a Workout:
+
+1. Login
+2. You will see the Dashboard with Today's Workout widget
+4. The `Workout` widget shows the `Workouts` scheduled for today
+    - Scheduled `Workouts` that have been marked as completed should not be shown
 5. You will have the options:
     * Start workout
     * Postpone workout for the next day
     * Mark as skipped
-6. Starting the workout will show you a list of the exercises in the workout.
-7. Next to each exercise in the list there will pre-filled counters for sets and reps to complete. There will also be + and - buttons next to the counters to increment/decrement reps and sets. 
-8. A checkbox to marke each exercise as completed. When checked, the exercise will be marked as completed.
+6. Starting the workout will take you to the `Workout Perform view` where you will see your `Workout` (list of exercises, sets, reps and weight)
+7. Next to each exercise in the list there will pre-filled counters
+    - Sets should display 0 / TOTAL SETS set in the `Workout` for the given exercise.
+    - Reps should display the reps for the current set. The user should still be able to increment/decrement reps with + and - buttons in case they want to do more/less reps than what is set in the `Workout`.
+    - Weights should display the weight for the current set. The user should still be able to increment/decrement weights with + and - buttons in case they want to do more/less weight than what is set in the `Workout`.
+    - It's important to save any increments/decrements of any of the above parameters to the cache/storage so that the user doesn't lose their progress if they close the app or the page.
+8. A checkbox to mark each exercise as completed. When checked, the exercise will be marked as completed.
+    - It's important to save the status of the checkbox (checked/unchecked) to the cache/storage so that the user doesn't lose their progress if they close the app or the page.
 9. When the user has completed all exercises, the workout will be marked as completed.
 10. The user can then click a button to save the workout and it will be added to the workout history.
+    - This will save and mark the `Workout` as completed permanently in the database.
 
-## Workout editor
 
-Intended usage workflow for editing a workout:
+## Workouts view
+
+Intended usage workflow for adding, removing and editing a Workout:
 1. Login
-2. Navigate to the **Workouts** view
+2. Navigate to the **Workouts** view via the Dashboard or the Menu
 3. Click on create `Workout` or Select an existing `Workout` (if any) to edit
 4. Edit the `Workout`
     * Add exercises
@@ -30,7 +63,6 @@ Intended usage workflow for editing a workout:
         * Set the number of reps per set
         * Set the weight (optional) if not set, then the exercise is bodyweight
         * Click on add exercise
-        * Select days of the week for the exercise to be scheduled on (this will update the calendar view). It should be a multi select. It should allow multiple exercises on a single day so that morning and evening splits are possible. A user could for example select Monday for "Bench Press" and also Monday for "Squat" resulting in two exercises on Monday.
     * Remove exercises
         * Click on remove exercise
     * Edit exercises
@@ -38,19 +70,24 @@ Intended usage workflow for editing a workout:
         * Change the number of sets
         * Change the number of reps per set
         * Change the weight
-        * Change the days of the week for the exercise to be scheduled on (this will update the calendar view). Exactly the same ui as when adding an exercise.
         * Click on save exercise
-5. Save the `Workout`
+5. Give the user the option to select which days of the week the Workout should be scheduled on.
+6. Save the `Workout`
 
-## Workout Schedule
+
+## Weekly Schedule
 
 1. Login
-2. Click on the Schedule link in the navbar
-3. You will see a calendar view of your workouts for the week. The title of the workout should be visible in the calendar view for each day. In finer text also display the exercises that make up the `Workout`. Also show the number of sets, reps and weight for each exercise.
+2. Navigate to the Weekly Schedule by clicking on the in either in the Widget or the Menu.
+3. You will see a calendar view of your `Workouts` for the week.
+    - The title of the `Workout` should be visible in the calendar view for each day.
+    - In finer text also display a count of the category (e.g Legs, Arms, Chest etc.) that make up the `Workout`.
+    - Also show the number of total reps for the Workout for each category.
+    - If a day is empty the option to "Add Workout" is displayed.
+      - The schedule is updated/saved after adding a `Workout`.
 4. You can click on one of the days to edit the schedule for that day.
-5. You should be presented with a drop down which allows you to select to filter on: the latest added exercises, the oldest exercises, the least scheduled exercises (because either it's an exercises that you need to implement more often or it should be removed) and the most scheduled exercises (to be able to find your favorites).
-6. You will then be able to select one or more of the exercises and click add, which will add them to the current schedule for the selected day.
-
+    - You will be able to add and remove `Workouts` for that day.
+      - The schedule is updated/saved after adding a `Workout`.
 
 
 ## User Invitation & Onboarding (Invite-Only)

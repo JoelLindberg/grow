@@ -59,15 +59,16 @@
                     !border-[var(--border-active)]
                 {% endif %}">
 
-            <!-- Day Header & Status -->
+            <!-- Day Header (Clickable to edit schedule for that day) -->
             <div class="p-3.5 sm:p-4 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
+                <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                    class="flex items-center gap-3 group min-w-0 flex-1">
                     <span class="w-9 h-9 rounded-xl badge-neutral flex items-center justify-center text-xs font-semibold font-mono shrink-0">
                         {{ day.day_abbr }}
                     </span>
-                    <div>
+                    <div class="min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-base font-bold text-[var(--text-primary)]">
+                            <h3 class="text-base font-bold text-[var(--text-primary)] group-hover:text-accent transition-colors">
                                 {{ day.day_name }}
                             </h3>
                             {% if day.is_today %}
@@ -80,73 +81,94 @@
                             {{ day.date|date:"l, M j, Y" }}
                         </p>
                     </div>
-                </div>
+                </a>
 
                 <!-- Action: Open Day Schedule Editor -->
                 <a href="{% url 'workouts:schedule_day' day.day_index %}"
                     class="btn-gym btn-secondary-gym px-3.5 text-xs font-medium shrink-0"
                     title="Edit {{ day.day_name }} schedule">
-                    <span>Edit Day</span>
+                    <span>{% if day.has_workouts %}Edit Day{% else %}Add Workout{% endif %}</span>
                 </a>
             </div>
 
-            <!-- Scheduled Workouts / Content (Directly inside panel via hairline dividers) -->
+            <!-- Scheduled Workouts for this Day -->
             {% if day.has_workouts %}
                 {% for p in day.workouts %}
                 <div class="p-3.5 sm:p-4 space-y-2">
                     <!-- Workout Title -->
-                    <div class="flex items-center justify-between">
-                        <h4 class="font-bold text-sm text-[var(--text-primary)]">
+                    <div class="flex items-center justify-between gap-2">
+                        <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                            class="font-bold text-sm sm:text-base text-[var(--text-primary)] hover:text-accent transition-colors">
                             {{ p.workout.name }}
-                        </h4>
-                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-md badge-accent">
-                            {{ p.recurrence }}
+                        </a>
+                        <span class="text-[11px] font-medium text-[var(--text-muted)] tabular-nums shrink-0">
+                            {{ p.total_exercises }} exercise{% if p.total_exercises != 1 %}s{% endif %} &bull; {{ p.total_reps }} reps
                         </span>
                     </div>
 
-                    <!-- Exercises list -->
-                    <ul class="divide-y divide-[var(--border-subtle)] text-xs">
-                        {% for we in p.exercises %}
-                        <li class="flex flex-col sm:flex-row sm:items-center justify-between py-2 first:pt-1 last:pb-0 gap-1">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span class="font-semibold text-[var(--text-primary)]">{{ we.exercise.name }}</span>
-                                <span class="text-[10px] px-1.5 py-0.5 rounded badge-neutral">
-                                    {{ we.exercise.muscle_group }}
-                                </span>
-                            </div>
-                            <div class="text-[11px] text-[var(--text-secondary)] font-mono tabular-nums flex items-center gap-1.5">
-                                <span>{{ we.target_sets }} sets &times; {{ we.target_reps }} reps</span>
-                                <span class="text-accent font-medium">&bull; {{ we.weight_display }}</span>
-                            </div>
-                        </li>
+                    <!-- Finer text: Category counts and total reps per category -->
+                    {% if p.categories %}
+                    <div class="flex flex-wrap gap-1.5 pt-0.5">
+                        {% for cat in p.categories %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-surface-elevated)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] tabular-nums">
+                            <strong class="font-semibold text-[var(--text-primary)]">{{ cat.category }}:</strong>
+                            <span>{{ cat.count }}</span>
+                            <span class="text-[var(--text-muted)]">&bull;</span>
+                            <span>{{ cat.total_reps }} reps</span>
+                        </span>
                         {% endfor %}
-                    </ul>
+                    </div>
+                    {% else %}
+                    <p class="text-[11px] text-[var(--text-muted)]">
+                        No exercises added to this workout yet.
+                    </p>
+                    {% endif %}
                 </div>
                 {% endfor %}
-
-                <!-- Day Summary metrics -->
-                <div class="px-3.5 py-2.5 bg-[var(--bg-surface-elevated)] flex items-center justify-between text-[11px] text-[var(--text-muted)] tabular-nums">
-                    <span>{{ day.total_exercises }} exercise(s) &bull; {{ day.total_sets }} total sets</span>
-                    <a href="{% url 'workouts:schedule_day' day.day_index %}" class="text-accent hover:underline font-medium">
-                        + Add exercises
-                    </a>
-                </div>
             {% else %}
-                <!-- Rest Day / Empty State -->
-                <div class="p-3.5 sm:p-4 bg-[var(--bg-surface-elevated)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div class="flex items-center gap-2.5">
-                        <span class="theme-mood-icon theme-mood-recovery text-[var(--text-muted)] shrink-0" aria-hidden="true"></span>
-                        <div>
-                            <span class="font-semibold text-[var(--text-primary)]">Rest &amp; Recovery Day</span>
-                            <p class="text-[11px] text-[var(--text-muted)]">
-                                Muscle recovery and balanced nutrition focus.
-                            </p>
+                <!-- Empty Day State: Option to "Add Workout" -->
+                <div class="p-3.5 sm:p-4 bg-[var(--bg-surface-elevated)] space-y-3" x-data="{ showQuickAdd: false }">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <span class="theme-mood-icon theme-mood-recovery text-[var(--text-muted)] shrink-0" aria-hidden="true"></span>
+                            <div>
+                                <span class="font-semibold text-[var(--text-primary)]">No Workout Scheduled</span>
+                                <p class="text-[11px] text-[var(--text-muted)]">
+                                    Rest day or add a workout to {{ day.day_name }}.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 self-start sm:self-auto">
+                            {% if user_workouts %}
+                            <button type="button" @click="showQuickAdd = !showQuickAdd"
+                                class="btn-gym btn-secondary-gym px-3 text-xs font-medium">
+                                <span x-text="showQuickAdd ? 'Cancel' : '+ Add Workout'">+ Add Workout</span>
+                            </button>
+                            {% else %}
+                            <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                                class="btn-gym btn-secondary-gym px-3 text-xs font-medium">
+                                + Add Workout
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
-                    <a href="{% url 'workouts:schedule_day' day.day_index %}"
-                        class="btn-gym btn-secondary-gym px-3 text-xs font-medium self-start sm:self-auto">
-                        + Schedule Workout
-                    </a>
+
+                    {% if user_workouts %}
+                    <form x-show="showQuickAdd" x-transition style="display: none;"
+                        method="post" action="{% url 'workouts:schedule_day_workout_add' day.day_index %}"
+                        class="pt-2 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="schedule">
+                        <select name="workout_id" required class="input-gym cursor-pointer flex-1">
+                            {% for workout in user_workouts %}
+                            <option value="{{ workout.id }}">{{ workout.name }} ({{ workout.exercise_count }} exercises)</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-gym btn-primary-gym px-4 text-xs font-semibold shrink-0">
+                            Save to {{ day.day_name }}
+                        </button>
+                    </form>
+                    {% endif %}
                 </div>
             {% endif %}
 

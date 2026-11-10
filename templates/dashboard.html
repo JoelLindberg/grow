@@ -3,14 +3,7 @@
 {% block title %}Dashboard — GROW{% endblock %}
 
 {% block content %}
-{{ today_exercises|json_script:"today-exercises-data" }}
-
-<div class="space-y-6" x-data="{
-    activeTab: 'today',
-    wellRested: true,
-    workoutStarted: false,
-    exercises: JSON.parse(document.getElementById('today-exercises-data')?.textContent || '[]')
-}">
+<div class="space-y-6">
 
     <!-- Clean Member Header -->
     <section class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 pb-2">
@@ -22,247 +15,213 @@
                 Welcome back, {{ request.user.username|title }}
             </h1>
         </div>
-        <a href="{% url 'workouts:schedule' %}" class="text-xs font-medium text-accent hover:underline">
-            Weekly Schedule &rarr;
-        </a>
     </section>
 
-    <!-- Main Dashboard Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <!-- Dashboard Widgets Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-        <!-- Column 1 & 2: Primary Workout Flow -->
-        <div class="md:col-span-2 space-y-5">
-
-            <!-- Today's Workout Section (Flat section header + single-layer exercise items) -->
-            <div class="section-theme space-y-3.5">
-                <div class="space-y-1 px-1">
-                    <span class="text-xs font-semibold text-accent">
-                        Today's Session &bull; {{ today_day_name }}
-                    </span>
-                    <h2 class="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-                        {{ today_workout_title }}
-                    </h2>
-                    {% if today_has_workouts %}
-                    <p class="text-xs text-[var(--text-muted)] tabular-nums">
-                        <span x-text="exercises.length"></span> exercises scheduled for today
-                    </p>
-                    {% else %}
-                    <p class="text-xs text-[var(--text-muted)]">
-                        No workout assigned for {{ today_day_name }}. Rest or pick a routine.
-                    </p>
-                    {% endif %}
+        <!-- Widget 1: Workouts (Today's Workouts + Edit Workouts) -->
+        <div class="section-theme space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--text-primary)]">Workouts</h2>
+                    <p class="text-xs text-[var(--text-muted)]">Today's Workouts &bull; {{ today_day_name }}</p>
                 </div>
-
-                {% if today_has_workouts %}
-                <!-- Action Bar: Start / Postpone / Skip -->
-                <div class="flex flex-wrap items-center gap-2 px-1">
-                    <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-5 text-sm gap-2">
-                        <span>Start Workout</span>
-                    </a>
-
-                    <form method="post" action="{% url 'workouts:workout_postpone' %}" class="inline m-0">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-gym btn-secondary-gym px-3.5 text-xs">
-                            Postpone
-                        </button>
-                    </form>
-
-                    <form method="post" action="{% url 'workouts:workout_skip' %}" class="inline m-0">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-gym btn-secondary-gym px-3.5 text-xs text-[var(--text-muted)] hover:text-[var(--status-danger)]">
-                            Skip
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Workout Exercise List with Single-Layer Inset Panels -->
-                <div class="space-y-2.5 pt-1">
-                    <h3 class="text-xs font-semibold text-[var(--text-muted)] px-1">Exercises</h3>
-
-                    <template x-for="ex in exercises" :key="ex.id">
-                        <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden transition-colors"
-                            :class="ex.completed
-                                ? '!bg-[var(--accent-subtle)] !border-[var(--accent-border)]'
-                                : ''">
-                            <div class="p-3.5 flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-3">
-                                    <!-- Checkbox (44x44px touch target) -->
-                                    <button @click="ex.completed = !ex.completed"
-                                        class="counter-btn shrink-0"
-                                        :class="ex.completed ? '!bg-[var(--accent-primary)] !text-white !border-[var(--accent-primary)]' : ''"
-                                        :title="ex.completed ? 'Mark incomplete' : 'Check set complete'">
-                                        <svg x-show="ex.completed" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                                d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        <span x-show="!ex.completed"
-                                            class="w-3.5 h-3.5 rounded border border-[var(--border-medium)]"></span>
-                                    </button>
-
-                                    <div>
-                                        <h4 class="font-semibold text-sm text-[var(--text-primary)]"
-                                            :class="{ 'line-through text-[var(--text-muted)]': ex.completed }"
-                                            x-text="ex.name"></h4>
-                                        <p class="text-xs text-[var(--text-muted)] tabular-nums">
-                                            <span x-text="ex.sets"></span> sets &times; <span x-text="ex.reps"></span> reps
-                                            <span x-show="ex.weight > 0"> &bull; <span x-text="ex.weight"></span> kg</span>
-                                            <span x-show="ex.weight == 0"> &bull; Bodyweight</span>
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <span class="text-[11px] font-medium px-2 py-0.5 rounded-md shrink-0"
-                                    :class="ex.completed ? 'badge-accent' : 'badge-neutral'"
-                                    x-text="ex.completed ? 'Done' : 'Pending'"></span>
-                            </div>
-
-                            <!-- Vertically Stacked Touch Counters on Mobile -->
-                            <div class="divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-subtle)] grid grid-cols-1 sm:grid-cols-2 text-xs tabular-nums">
-                                <!-- Reps Controller -->
-                                <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
-                                    <span class="text-[var(--text-muted)] font-medium">Reps</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <button @click="if (ex.reps > 1) ex.reps--" class="counter-btn">-</button>
-                                        <span class="w-9 text-center font-semibold text-sm text-[var(--text-primary)]" x-text="ex.reps"></span>
-                                        <button @click="ex.reps++" class="counter-btn">+</button>
-                                    </div>
-                                </div>
-
-                                <!-- Weight Controller -->
-                                <div class="flex items-center justify-between px-3.5 py-2.5 gap-2">
-                                    <span class="text-[var(--text-muted)] font-medium">Weight (kg)</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <button @click="if (ex.weight >= 2.5) ex.weight -= 2.5; else if(ex.weight > 0) ex.weight = 0;"
-                                            class="counter-btn">-</button>
-                                        <span class="w-11 text-center font-semibold text-sm text-[var(--text-primary)]" x-text="ex.weight"></span>
-                                        <button @click="ex.weight += 2.5" class="counter-btn">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <!-- Open Full Workout Session -->
-                <div class="pt-1">
-                    <a href="{% url 'workouts:workout_today' %}"
-                        class="btn-gym btn-secondary-gym w-full text-xs font-semibold gap-2">
-                        <span>Open Full Session &amp; Log Results &rarr;</span>
-                    </a>
-                </div>
-                {% else %}
-                <!-- Rest Day State (Single-layer panel) -->
-                <div class="card-theme p-6 text-center space-y-3">
-                    <div class="w-10 h-10 rounded-xl badge-accent flex items-center justify-center mx-auto">
-                        <span class="theme-mood-icon theme-mood-recovery" aria-hidden="true"></span>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base font-semibold text-[var(--text-primary)]">Rest &amp; Recovery Day</h3>
-                        <p class="text-xs text-[var(--text-muted)] max-w-sm mx-auto leading-relaxed">
-                            Recover your muscles, reflect, and prepare for upcoming training sessions.
-                        </p>
-                    </div>
-                    <div class="pt-2 flex flex-wrap items-center justify-center gap-2.5">
-                        <a href="{% url 'workouts:schedule' %}" class="btn-gym btn-primary-gym px-4 text-xs font-semibold">
-                            Open Schedule
-                        </a>
-                        <a href="{% url 'workouts:workout_list' %}" class="btn-gym btn-secondary-gym px-4 text-xs font-medium">
-                            Browse Workouts
-                        </a>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Column 3: Secondary Widgets -->
-        <div class="space-y-5">
-
-            <!-- Workouts Summary Section (Flat header + single-layer inset list) -->
-            <div class="section-theme space-y-2.5">
-                <div class="flex items-center justify-between px-1">
-                    <h3 class="font-semibold text-sm text-[var(--text-primary)]">Workouts</h3>
-                    <a href="{% url 'workouts:workout_create' %}" class="text-xs font-medium text-accent hover:underline">
-                        + New
-                    </a>
-                </div>
-
-                {% if workouts %}
-                <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
-                    {% for p in workouts|slice:":3" %}
-                    <a href="{% url 'workouts:workout_edit' p.id %}"
-                        class="block p-3.5 hover:bg-[var(--bg-surface-elevated)] transition-colors">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-xs font-semibold text-[var(--text-primary)]">{{ p.name }}</span>
-                            <span class="text-[11px] text-[var(--text-muted)] tabular-nums">{{ p.exercise_count }} ex &bull; ~{{ p.estimated_duration_minutes }}m</span>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="card-theme p-3.5 text-xs text-[var(--text-muted)]">
-                    No workouts created yet. Build routines to organize your training.
-                </div>
-                {% endif %}
-
-                <a href="{% url 'workouts:workout_list' %}"
-                    class="btn-gym btn-secondary-gym w-full text-xs font-medium">
-                    Manage Workouts
+                <a href="{% url 'workouts:workout_list' %}" class="text-xs font-semibold text-accent hover:underline">
+                    Edit Workouts &rarr;
                 </a>
             </div>
 
-            <!-- Plant-Based Nutrition Section (Single-layer inset panel) -->
-            <div class="section-theme space-y-2.5">
-                <div class="flex items-center justify-between px-1">
-                    <h3 class="font-semibold text-sm text-[var(--text-primary)]">Plant-Based Fuel</h3>
-                    <span class="text-xs font-semibold text-accent tabular-nums">112g / 140g</span>
-                </div>
-
-                <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
-                    <!-- Daily Protein Progress Bar -->
-                    <div class="p-3.5">
-                        <div class="w-full h-2 rounded-full bg-[var(--bg-surface-elevated)] overflow-hidden">
-                            <div class="h-full rounded-full bg-[var(--accent-primary)]" style="width: 80%;"></div>
-                        </div>
-                        <p class="text-[11px] text-[var(--text-muted)] mt-1.5 flex justify-between tabular-nums">
-                            <span>80% of daily target</span>
-                            <span>28g remaining</span>
+            {% if today_has_workouts %}
+            <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                {% for dw in today_workouts %}
+                <div class="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1 min-w-0">
+                        <h3 class="font-bold text-base text-[var(--text-primary)]">
+                            {{ dw.workout.name }}
+                        </h3>
+                        <p class="text-xs text-[var(--text-muted)] tabular-nums">
+                            {{ dw.total_exercises }} exercise{% if dw.total_exercises != 1 %}s{% endif %} &bull; {{ dw.total_reps }} total reps
                         </p>
+                        {% if dw.categories %}
+                        <div class="flex flex-wrap gap-1 pt-0.5">
+                            {% for cat in dw.categories %}
+                            <span class="text-[10px] px-2 py-0.5 rounded badge-neutral tabular-nums">
+                                {{ cat.category }}: {{ cat.count }} ({{ cat.total_reps }} reps)
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
 
-                    <!-- Amino Acid Pairing -->
-                    <div class="p-3.5 space-y-1">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-semibold text-[var(--text-primary)]">Complete Protein Pairing</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-md font-medium badge-success">Optimal</span>
-                        </div>
-                        <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                            <strong class="text-[var(--text-secondary)]">Red Lentil Dahl + Brown Rice</strong> forms a complete amino acid chain (lysine + methionine).
-                        </p>
+                    <div class="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                        <a href="{% url 'workouts:workout_today' %}?workout={{ dw.workout.id }}"
+                            class="btn-gym btn-primary-gym px-4 text-xs font-semibold">
+                            Start Workout
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Today's Session Quick Actions (Postpone / Skip) -->
+                <div class="px-3.5 py-2.5 bg-[var(--bg-surface-elevated)] flex items-center justify-between gap-2 text-xs">
+                    <span class="text-[var(--text-muted)]">Need to adjust today?</span>
+                    <div class="flex items-center gap-2">
+                        <form method="post" action="{% url 'workouts:workout_postpone' %}" class="inline m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-2 py-1">
+                                Postpone
+                            </button>
+                        </form>
+                        <span class="text-[var(--border-medium)]">&bull;</span>
+                        <form method="post" action="{% url 'workouts:workout_skip' %}" class="inline m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--status-danger)] px-2 py-1">
+                                Skip
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
-
-            <!-- Mind & Recovery Card -->
-            <div class="card-theme p-3.5 sm:p-4 space-y-2.5">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="theme-mood-icon text-[var(--accent-primary)]"
-                            :class="wellRested ? 'theme-mood-rested' : 'theme-mood-recovery'"
-                            aria-hidden="true"></span>
-                        <h3 class="font-semibold text-sm text-[var(--text-primary)]">Readiness</h3>
-                    </div>
-                    <button @click="wellRested = !wellRested"
-                        class="px-2.5 py-1 rounded-lg text-xs font-medium transition-colors"
-                        :class="wellRested ? 'badge-success' : 'badge-warning'"
-                        x-text="wellRested ? 'Well Rested' : 'Needs Recovery'">Well Rested</button>
-                </div>
-                <p class="text-xs text-[var(--text-muted)] leading-relaxed">
-                    Logging readiness guides recovery intervals. When fatigued, prioritize lighter volume or rest.
+            {% elif all_today_completed %}
+            <div class="card-theme p-5 text-center space-y-2">
+                <p class="text-sm font-semibold text-[var(--status-success)]">
+                    All workouts completed for today
+                </p>
+                <p class="text-xs text-[var(--text-muted)]">
+                    Great work! Rest and recover for your next session.
                 </p>
             </div>
+            {% else %}
+            <div class="card-theme p-5 text-center space-y-2">
+                <p class="text-sm font-medium text-[var(--text-primary)]">
+                    No workouts scheduled for today
+                </p>
+                <p class="text-xs text-[var(--text-muted)]">
+                    Rest and recover, or schedule a workout for {{ today_day_name }}.
+                </p>
+            </div>
+            {% endif %}
 
+            <a href="{% url 'workouts:workout_list' %}"
+                class="btn-gym btn-secondary-gym w-full text-xs font-medium">
+                Edit Workouts
+            </a>
+        </div>
+
+        <!-- Widget 2: Weekly Schedule (Compact overview + Edit Schedule) -->
+        <div class="section-theme space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--text-primary)]">Weekly Schedule</h2>
+                    <p class="text-xs text-[var(--text-muted)]">Scheduled days &amp; workout counts</p>
+                </div>
+                <a href="{% url 'workouts:schedule' %}" class="text-xs font-semibold text-accent hover:underline">
+                    Edit Schedule &rarr;
+                </a>
+            </div>
+
+            {% if scheduled_week_days %}
+            <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                {% for day in scheduled_week_days %}
+                <a href="{% url 'workouts:schedule_day' day.day_index %}"
+                    class="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-[var(--bg-surface-elevated)] transition-colors
+                        {% if day.is_today %}bg-[var(--accent-subtle)]{% endif %}">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="w-10 text-xs font-mono font-semibold shrink-0 {% if day.is_today %}text-accent{% else %}text-[var(--text-secondary)]{% endif %}">
+                            {{ day.day_abbr }}
+                        </span>
+                        <div class="truncate text-xs font-semibold text-[var(--text-primary)]">
+                            {{ day.day_name }}
+                            <span class="text-[var(--text-muted)] font-normal">
+                                &bull;
+                                {% for p in day.workouts %}
+                                    {{ p.workout.name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        {% if day.is_today %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded badge-accent font-semibold">Today</span>
+                        {% endif %}
+                        <span class="text-xs font-semibold text-[var(--text-secondary)] tabular-nums">
+                            {{ day.workout_count }} workout{% if day.workout_count != 1 %}s{% endif %}
+                        </span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card-theme p-5 text-center text-xs text-[var(--text-muted)]">
+                No workouts scheduled this week.
+            </div>
+            {% endif %}
+
+            <a href="{% url 'workouts:schedule' %}"
+                class="btn-gym btn-secondary-gym w-full text-xs font-medium">
+                Edit Schedule
+            </a>
+        </div>
+
+        <!-- Widget 3: Workout History (Completed count & Completion rate percentage) -->
+        <div class="section-theme space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--text-primary)]">Workout History</h2>
+                    <p class="text-xs text-[var(--text-muted)]">Completed sessions &amp; completion rate</p>
+                </div>
+                <a href="{% url 'workouts:workout_history' %}" class="text-xs font-semibold text-accent hover:underline">
+                    View History &rarr;
+                </a>
+            </div>
+
+            <div class="card-theme divide-y divide-[var(--border-subtle)] overflow-hidden">
+                <div class="grid grid-cols-2 divide-x divide-[var(--border-subtle)] tabular-nums">
+                    <div class="p-4 text-center">
+                        <span class="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] block">
+                            Workouts Completed
+                        </span>
+                        <span class="text-2xl font-bold text-[var(--text-primary)] mt-1 block">
+                            {{ total_completed }}
+                        </span>
+                    </div>
+                    <div class="p-4 text-center">
+                        <span class="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] block">
+                            Completion Rate
+                        </span>
+                        <span class="text-2xl font-bold text-accent mt-1 block">
+                            {{ completion_rate }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{% url 'workouts:workout_history' %}"
+                class="btn-gym btn-secondary-gym w-full text-xs font-medium">
+                Workout History
+            </a>
+        </div>
+
+        <!-- Widget 4: Meals (Today's Meals + Edit Meals — blank placeholder for now) -->
+        <div class="section-theme space-y-2.5">
+            <div class="flex items-center justify-between px-1">
+                <div>
+                    <h2 class="text-base font-bold text-[var(--text-primary)]">Meals</h2>
+                    <p class="text-xs text-[var(--text-muted)]">Today's Meals</p>
+                </div>
+                <span class="text-xs font-medium text-[var(--text-muted)]">
+                    Edit Meals
+                </span>
+            </div>
+
+            <div class="card-theme p-5 text-center space-y-1">
+                <p class="text-xs font-medium text-[var(--text-secondary)]">Today's Meals</p>
+                <p class="text-xs text-[var(--text-muted)]">
+                    Meal planning coming soon.
+                </p>
+            </div>
         </div>
 
     </div>

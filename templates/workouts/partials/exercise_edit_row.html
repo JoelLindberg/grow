@@ -86,30 +86,6 @@
             </div>
         </div>
 
-        <!-- Schedule on Days of the Week -->
-        <div class="p-3.5 space-y-2">
-            <div class="flex items-center justify-between">
-                <label class="block text-xs font-semibold text-[var(--text-secondary)]">
-                    Schedule on Days
-                </label>
-                <span class="text-[11px] font-medium text-accent">
-                    {{ workout_exercise.scheduled_days_display }}
-                </span>
-            </div>
-            <div class="grid grid-cols-7 gap-1">
-                {% for day_val, day_name in day_choices %}
-                <label class="cursor-pointer">
-                    <input type="checkbox" name="days" value="{{ day_val }}"
-                        {% if day_val in workout_exercise.scheduled_day_indices %}checked{% endif %}
-                        class="sr-only peer">
-                    <div class="h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex flex-col items-center justify-center text-xs font-semibold text-[var(--text-secondary)] peer-checked:bg-[var(--accent-primary)] peer-checked:text-white peer-checked:border-[var(--accent-primary)] transition-colors">
-                        <span>{{ day_name }}</span>
-                    </div>
-                </label>
-                {% endfor %}
-            </div>
-        </div>
-
         <!-- Actions -->
         <div class="p-3.5 flex items-center justify-end gap-2 bg-[var(--bg-surface-elevated)]">
             <button type="button"
@@ -120,7 +96,7 @@
             </button>
             <button type="submit"
                 class="btn-gym btn-primary-gym px-4 text-xs font-semibold">
-                Save Changes
+                Save Exercise
             </button>
         </div>
     </form>

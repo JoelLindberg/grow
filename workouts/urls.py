@@ -24,13 +24,13 @@ urlpatterns = [
     path("today/save/", views.workout_save_session_view, name="workout_save_session"),
     path("history/", views.workout_history_view, name="workout_history"),
 
-    # Workout Schedule & Weekly Calendar (PRD & User Flows)
+    # Workout Schedule & Weekly Calendar (PRD & User Flows — Workouts are scheduled, not exercises)
     path("schedule/", views.schedule_week_view, name="schedule"),
     path("schedule/settings/week-start/", views.schedule_week_start_preference_view, name="schedule_week_start"),
+    path("schedule/clear/", views.schedule_clear_all_view, name="schedule_clear_all"),
     path("schedule/<int:day_index>/", views.schedule_day_view, name="schedule_day"),
-    path("schedule/<int:day_index>/exercises/filtered/", views.schedule_filtered_exercises_view, name="schedule_filtered_exercises"),
-    path("schedule/<int:day_index>/exercises/add/", views.schedule_day_exercise_add_view, name="schedule_day_exercise_add"),
-    path("schedule/<int:day_index>/workout-exercise/<int:workout_exercise_id>/remove/", views.schedule_day_exercise_remove_view, name="schedule_day_exercise_remove"),
+    path("schedule/<int:day_index>/workouts/add/", views.schedule_day_workout_add_view, name="schedule_day_workout_add"),
+    path("schedule/<int:day_index>/workouts/<int:workout_id>/remove/", views.schedule_day_workout_remove_view, name="schedule_day_workout_remove"),
     path("schedule/assign-workout/", views.schedule_workout_assign_view, name="schedule_workout_assign"),
     path("schedule/assignment/<int:schedule_id>/delete/", views.schedule_assignment_delete_view, name="schedule_assignment_delete"),
 
@@ -44,6 +44,5 @@ urlpatterns = [
     path("plans/<int:workout_id>/exercises/<int:exercise_id>/edit/", views.workout_exercise_edit_view, name="plan_exercise_edit"),
     path("plans/<int:workout_id>/exercises/<int:exercise_id>/delete/", views.workout_exercise_delete_view, name="plan_exercise_delete"),
     path("plans/<int:workout_id>/exercises/<int:exercise_id>/move/<str:direction>/", views.workout_exercise_move_view, name="plan_exercise_move"),
-    path("schedule/<int:day_index>/plan-exercise/<int:workout_exercise_id>/remove/", views.schedule_day_exercise_remove_view, name="schedule_day_plan_exercise_remove"),
     path("schedule/assign-plan/", views.schedule_workout_assign_view, name="schedule_plan_assign"),
 ]

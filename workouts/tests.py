@@ -340,77 +340,76 @@ class WorkoutScheduleTests(TestCase):
         self.assertEqual(ordered_sun[1][0], 0)
         self.assertEqual(ordered_sun[1][1], "Monday")
 
-    def test_workout_exercise_scheduled_days_functionality(self):
-        """Verify WorkoutExercise stores days and provides query helpers."""
-        workout = Workout.objects.create(user=self.user, name="Split Workout")
-        we = WorkoutExercise.objects.create(
+    def test_workout_scheduled_days_and_category_summary(self):
+        """Verify Workout stores scheduled_days and computes category count & total reps."""
+        workout = Workout.objects.create(
+            user=self.user,
+            name="Split Workout",
+            scheduled_days=[0, 2, 4],  # Mon, Wed, Fri
+        )
+        WorkoutExercise.objects.create(
             workout=workout,
             exercise=self.pushup,
             target_sets=3,
             target_reps=12,
-            scheduled_days=[0, 2, 4],  # Mon, Wed, Fri
         )
-        self.assertTrue(we.is_scheduled_on(0))
-        self.assertFalse(we.is_scheduled_on(1))
-        self.assertTrue(we.is_scheduled_on(2))
-        self.assertEqual(we.scheduled_days_display, "Mon, Wed, Fri")
-        self.assertEqual(we.scheduled_day_indices, [0, 2, 4])
+        WorkoutExercise.objects.create(
+            workout=workout,
+            exercise=self.squat,
+            target_sets=4,
+            target_reps=10,
+        )
+        self.assertTrue(workout.is_scheduled_on(0))
+        self.assertFalse(workout.is_scheduled_on(1))
+        self.assertTrue(workout.is_scheduled_on(2))
+        self.assertEqual(workout.scheduled_days_display, "Mon, Wed, Fri")
+        self.assertEqual(workout.scheduled_day_indices, [0, 2, 4])
+        self.assertEqual(workout.total_reps, 3 * 12 + 4 * 10)
 
-        self.assertIn(we, workout.exercises_for_day(0))
-        self.assertEqual(workout.exercises_for_day(1), [])
+        categories = {c["category"]: c for c in workout.category_summary}
+        self.assertEqual(categories["Chest"]["count"], 1)
+        self.assertEqual(categories["Chest"]["total_reps"], 36)
+        self.assertEqual(categories["Legs"]["count"], 1)
+        self.assertEqual(categories["Legs"]["total_reps"], 40)
 
-    def test_add_and_edit_exercise_with_scheduled_days_in_editor(self):
-        """Verify editor form posts save days of the week for splits."""
+    def test_save_workout_with_scheduled_days_in_editor(self):
+        """Verify Workout editor saves days of the week for the entire Workout."""
         workout = Workout.objects.create(user=self.user, name="Push Workout")
 
-        add_url = reverse("workouts:workout_exercise_add", kwargs={"workout_id": workout.id})
+        edit_url = reverse("workouts:workout_edit", kwargs={"workout_id": workout.id})
         data = {
-            "exercise": self.pushup.id,
-            "target_sets": 4,
-            "target_reps": 12,
-            "target_weight_kg": "",
+            "name": "Push Workout",
+            "description": "Chest & Triceps",
             "days": ["0", "3"],
         }
-        res = self.client.post(add_url, data, HTTP_HX_REQUEST="true")
-        self.assertEqual(res.status_code, 200)
+        res = self.client.post(edit_url, data)
+        self.assertEqual(res.status_code, 302)
 
-        we = WorkoutExercise.objects.get(workout=workout, exercise=self.pushup)
-        self.assertEqual(we.scheduled_days, [0, 3])
-
-        edit_url = reverse(
-            "workouts:workout_exercise_edit",
-            kwargs={"workout_id": workout.id, "exercise_id": we.id},
-        )
-        edit_data = {
-            "exercise": self.pushup.id,
-            "target_sets": 4,
-            "target_reps": 15,
-            "target_weight_kg": "",
-            "days": ["1", "4"],
-        }
-        edit_res = self.client.post(edit_url, edit_data, HTTP_HX_REQUEST="true")
-        self.assertEqual(edit_res.status_code, 200)
-
-        we.refresh_from_db()
-        self.assertEqual(we.scheduled_days, [1, 4])
+        workout.refresh_from_db()
+        self.assertEqual(workout.scheduled_days, [0, 3])
 
     def test_schedule_week_view(self):
-        """Verify weekly calendar renders with days, workouts, and exercises."""
-        workout = Workout.objects.create(user=self.user, name="Upper Split")
+        """Verify weekly calendar renders with workout title, category counts, and total reps per category."""
+        workout = Workout.objects.create(
+            user=self.user,
+            name="Upper Split",
+            scheduled_days=[0],  # Monday
+        )
         WorkoutExercise.objects.create(
             workout=workout,
             exercise=self.pushup,
             target_sets=3,
             target_reps=10,
-            scheduled_days=[0],  # Monday
         )
 
         schedule_url = reverse("workouts:schedule")
         res = self.client.get(schedule_url)
         self.assertEqual(res.status_code, 200)
-        self.assertContains(res, "Weekly Workout Schedule")
+        self.assertContains(res, "Weekly Schedule")
         self.assertContains(res, "Upper Split")
-        self.assertContains(res, "Push-Up (Normal)")
+        self.assertContains(res, "Chest:")
+        self.assertContains(res, "30 reps")
+        self.assertContains(res, "Add Workout")
         self.assertContains(res, "Monday")
 
     def test_schedule_week_start_preference_toggle_view(self):
@@ -422,52 +421,55 @@ class WorkoutScheduleTests(TestCase):
         self.user.profile.refresh_from_db()
         self.assertEqual(self.user.profile.week_start_day, "sunday")
 
-    def test_schedule_day_view_and_filter_dropdown(self):
-        """Verify clicking on a day opens the day editor and exercises filter dropdown works."""
+    def test_schedule_day_view_and_add_remove_workouts(self):
+        """Verify clicking on a day opens the day editor where Workouts can be added and removed."""
+        workout = Workout.objects.create(user=self.user, name="Monday Routine")
+        WorkoutExercise.objects.create(
+            workout=workout,
+            exercise=self.squat,
+            target_sets=3,
+            target_reps=12,
+        )
+
         day_url = reverse("workouts:schedule_day", kwargs={"day_index": 0})  # Monday
         res = self.client.get(day_url)
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "Monday Schedule")
-        self.assertContains(res, "Latest added exercises")
-        self.assertContains(res, "Least scheduled exercises")
-        self.assertContains(res, "Most scheduled exercises")
+        self.assertContains(res, "Add Workout to Monday")
+        self.assertContains(res, "Monday Routine")
 
-        filter_url = reverse("workouts:schedule_filtered_exercises", kwargs={"day_index": 0})
-        res_least = self.client.get(f"{filter_url}?filter=least_scheduled", HTTP_HX_REQUEST="true")
-        self.assertEqual(res_least.status_code, 200)
-        self.assertContains(res_least, "Scheduled: 0x")
+        # Add workout to Monday
+        add_url = reverse("workouts:schedule_day_workout_add", kwargs={"day_index": 0})
+        add_res = self.client.post(add_url, {"workout_id": workout.id})
+        self.assertEqual(add_res.status_code, 302)
 
-        res_most = self.client.get(f"{filter_url}?filter=most_scheduled", HTTP_HX_REQUEST="true")
-        self.assertEqual(res_most.status_code, 200)
+        workout.refresh_from_db()
+        self.assertIn(0, workout.scheduled_days)
 
-    def test_schedule_day_add_and_remove_exercises(self):
-        """Verify selecting exercises from day editor adds them to the schedule, and remove works."""
-        workout = Workout.objects.create(user=self.user, name="Monday Routine")
-        add_url = reverse("workouts:schedule_day_exercise_add", kwargs={"day_index": 0})
-
-        post_data = {
-            "selected_exercises": [self.squat.id, self.wheel.id],
-            "workout_id": workout.id,
-            "target_sets": 3,
-            "target_reps": 12,
-            "target_weight_kg": "",
-        }
-        res = self.client.post(add_url, post_data)
-        self.assertEqual(res.status_code, 302)
-
-        we_squat = WorkoutExercise.objects.get(workout=workout, exercise=self.squat)
-        self.assertIn(0, we_squat.scheduled_days)
-
-        # Remove squat from Monday
+        # Remove workout from Monday
         remove_url = reverse(
-            "workouts:schedule_day_exercise_remove",
-            kwargs={"day_index": 0, "workout_exercise_id": we_squat.id},
+            "workouts:schedule_day_workout_remove",
+            kwargs={"day_index": 0, "workout_id": workout.id},
         )
         rem_res = self.client.post(remove_url)
         self.assertEqual(rem_res.status_code, 302)
 
-        we_squat.refresh_from_db()
-        self.assertNotIn(0, we_squat.scheduled_days)
+        workout.refresh_from_db()
+        self.assertNotIn(0, workout.scheduled_days)
+
+    def test_schedule_clear_all_workouts(self):
+        """Verify clearing all workouts from the weekly schedule."""
+        workout = Workout.objects.create(
+            user=self.user,
+            name="Full Body",
+            scheduled_days=[0, 2, 4],
+        )
+        clear_url = reverse("workouts:schedule_clear_all")
+        res = self.client.post(clear_url)
+        self.assertEqual(res.status_code, 302)
+
+        workout.refresh_from_db()
+        self.assertEqual(workout.scheduled_days, [])
 
     def test_assign_workout_recurring(self):
         """Verify assigning a workout at recurring intervals (daily, weekly, monthly)."""
@@ -519,18 +521,21 @@ class WorkoutExecutionAndResultTrackingTests(TestCase):
 
         # Create workout scheduled for today
         self.today_weekday = timezone.localdate().weekday()
-        self.workout = Workout.objects.create(user=self.user, name="Daily Power Routine")
+        self.workout = Workout.objects.create(
+            user=self.user,
+            name="Daily Power Routine",
+            scheduled_days=[self.today_weekday],
+        )
         self.we1 = WorkoutExercise.objects.create(
             workout=self.workout,
             exercise=self.pushup,
             target_sets=3,
             target_reps=10,
             target_weight_kg=None,
-            scheduled_days=[self.today_weekday],
         )
 
     def test_workout_today_view_renders_scheduled_workout(self):
-        """Verify /workouts/today/ displays today's workout with Start/Postpone/Skip actions."""
+        """Verify /workouts/today/ displays today's workout with 0 / TOTAL SETS and localStorage persistence."""
         res = self.client.get(reverse("workouts:workout_today"))
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "Daily Power Routine")
@@ -538,16 +543,81 @@ class WorkoutExecutionAndResultTrackingTests(TestCase):
         self.assertContains(res, "Postpone for Next Day")
         self.assertContains(res, "Mark as Skipped")
         self.assertContains(res, "Push-Up (Normal)")
+        self.assertContains(res, '"completed_sets": 0')
+        self.assertContains(res, '"target_sets": 3')
+        self.assertContains(res, "grow_workout_progress_")
+        self.assertContains(res, "saveProgress()")
+
+    def test_dashboard_hides_completed_workouts_and_shows_all_completed_message(self):
+        """
+        Verify Dashboard Workouts widget:
+        - Displays uncompleted workouts scheduled for today.
+        - Does not display scheduled workouts that have been completed today.
+        - Displays 'All workouts completed for today' when all of today's scheduled workouts are completed.
+        - Displays 'No workouts scheduled for today' when no workouts are scheduled for today.
+        """
+        second_workout = Workout.objects.create(
+            user=self.user,
+            name="Evening Core Routine",
+            scheduled_days=[self.today_weekday],
+        )
+
+        # 1. Both scheduled workouts are uncompleted -> both shown in Workouts widget
+        res1 = self.client.get(reverse("dashboard"))
+        self.assertEqual(res1.status_code, 200)
+        self.assertEqual(len(res1.context["today_workouts"]), 2)
+        self.assertFalse(res1.context["all_today_completed"])
+        self.assertContains(res1, "Start Workout")
+
+        # 2. Mark first workout as completed today -> only second workout remains in today_workouts
+        WorkoutLog.objects.create(
+            user=self.user,
+            workout=self.workout,
+            workout_name=self.workout.name,
+            date=timezone.localdate(),
+            status="completed",
+            all_goals_completed=True,
+        )
+        res2 = self.client.get(reverse("dashboard"))
+        self.assertEqual(res2.status_code, 200)
+        self.assertEqual(len(res2.context["today_workouts"]), 1)
+        self.assertEqual(res2.context["today_workouts"][0]["workout"].id, second_workout.id)
+        self.assertFalse(res2.context["all_today_completed"])
+
+        # 3. Mark second workout as completed today -> all_today_completed is True, shows 'All workouts completed for today'
+        WorkoutLog.objects.create(
+            user=self.user,
+            workout=second_workout,
+            workout_name=second_workout.name,
+            date=timezone.localdate(),
+            status="completed",
+            all_goals_completed=True,
+        )
+        res3 = self.client.get(reverse("dashboard"))
+        self.assertEqual(res3.status_code, 200)
+        self.assertEqual(len(res3.context["today_workouts"]), 0)
+        self.assertTrue(res3.context["all_today_completed"])
+        self.assertContains(res3, "All workouts completed for today")
+
+        # 4. If no workouts are scheduled for today at all -> shows 'No workouts scheduled for today'
+        self.workout.scheduled_days = []
+        self.workout.save()
+        second_workout.scheduled_days = []
+        second_workout.save()
+        res4 = self.client.get(reverse("dashboard"))
+        self.assertEqual(res4.status_code, 200)
+        self.assertFalse(res4.context["all_today_completed"])
+        self.assertContains(res4, "No workouts scheduled for today")
 
     def test_workout_postpone_action(self):
-        """Verify postponing today's workout moves scheduled exercises to tomorrow."""
+        """Verify postponing today's workout moves scheduled workout to tomorrow."""
         tomorrow_weekday = (self.today_weekday + 1) % 7
         res = self.client.post(reverse("workouts:workout_postpone"))
         self.assertEqual(res.status_code, 302)
 
-        self.we1.refresh_from_db()
-        self.assertIn(tomorrow_weekday, self.we1.scheduled_days)
-        self.assertNotIn(self.today_weekday, self.we1.scheduled_days)
+        self.workout.refresh_from_db()
+        self.assertIn(tomorrow_weekday, self.workout.scheduled_days)
+        self.assertNotIn(self.today_weekday, self.workout.scheduled_days)
 
         log = WorkoutLog.objects.filter(user=self.user, status="postponed").first()
         self.assertIsNotNone(log)

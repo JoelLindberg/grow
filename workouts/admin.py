@@ -5,7 +5,7 @@ from workouts.models import Exercise, Workout, WorkoutExercise, WorkoutLog, Work
 class WorkoutExerciseInline(admin.TabularInline):
     model = WorkoutExercise
     extra = 1
-    fields = ("order", "exercise", "target_sets", "target_reps", "target_weight_kg", "scheduled_days")
+    fields = ("order", "exercise", "target_sets", "target_reps", "target_weight_kg")
     ordering = ("order",)
 
 
@@ -18,7 +18,7 @@ class ExerciseAdmin(admin.ModelAdmin):
 
 @admin.register(Workout)
 class WorkoutAdmin(admin.ModelAdmin):
-    list_display = ("name", "user", "exercise_count", "total_sets", "created_at", "updated_at")
+    list_display = ("name", "user", "exercise_count", "total_sets", "scheduled_days", "created_at", "updated_at")
     list_filter = ("created_at", "updated_at")
     search_fields = ("name", "description", "user__username")
     inlines = [WorkoutExerciseInline]
@@ -26,7 +26,7 @@ class WorkoutAdmin(admin.ModelAdmin):
 
 @admin.register(WorkoutExercise)
 class WorkoutExerciseAdmin(admin.ModelAdmin):
-    list_display = ("workout", "exercise", "target_sets", "target_reps", "target_weight_kg", "scheduled_days", "order")
+    list_display = ("workout", "exercise", "target_sets", "target_reps", "target_weight_kg", "order")
     list_filter = ("workout",)
     search_fields = ("workout__name", "exercise__name")
 

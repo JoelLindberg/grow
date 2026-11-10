@@ -36,65 +36,8 @@ class Exercise(models.Model):
 class Workout(models.Model):
     """
     User-defined workout blueprint (e.g. 'Push Day', 'Legs & Core').
-    Defines target exercises, sets, reps, weight, and rest intervals.
-    Serves as the reusable building block for daily schedules.
-    """
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="workouts",
-    )
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, default="")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["-updated_at"]
-        verbose_name = "Workout"
-        verbose_name_plural = "Workouts"
-
-    def __str__(self):
-        return f"{self.name} ({self.user.username})"
-
-    @property
-    def exercise_count(self):
-        return self.workout_exercises.count()
-
-    @property
-    def total_sets(self):
-        return sum(we.target_sets for we in self.workout_exercises.all())
-
-    @property
-    def muscle_groups(self):
-        """Returns sorted unique muscle groups targeted in this workout."""
-        groups = set(we.exercise.muscle_group for we in self.workout_exercises.select_related("exercise"))
-        return sorted(groups)
-
-    @property
-    def estimated_duration_minutes(self):
-        """
-        Estimates total workout duration in minutes (~105s per set).
-        """
-        total_seconds = self.total_sets * 105
-        return max(15, round(total_seconds / 60)) if self.exercise_count > 0 else 0
-
-    def exercises_for_day(self, day_index):
-        """Returns workout exercises scheduled on a specific day of the week (0=Mon, 6=Sun)."""
-        return [we for we in self.workout_exercises.select_related("exercise").order_by("order", "id") if we.is_scheduled_on(day_index)]
-
-    @property
-    def plan_exercises(self):
-        """Backward-compatibility alias."""
-        return self.workout_exercises
-
-
-class WorkoutExercise(models.Model):
-    """
-    An exercise assigned to a workout with prescription parameters:
-    target sets, target reps, weight (optional / bodyweight), rest time between sets,
-    and scheduled days of the week.
+    Defines target exercises, sets, reps, weight, and the days of the week
+    the entire workout is scheduled on.
     """
 
     DAY_NAMES = {
@@ -116,6 +59,139 @@ class WorkoutExercise(models.Model):
         6: "Sun",
     }
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="workouts",
+    )
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, default="")
+    scheduled_days = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Days of the week this workout is scheduled (0=Monday, 6=Sunday).",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        verbose_name = "Workout"
+        verbose_name_plural = "Workouts"
+
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
+
+    @property
+    def exercise_count(self):
+        return self.workout_exercises.count()
+
+    @property
+    def total_sets(self):
+        total = 0
+        for we in self.workout_exercises.all():
+            total += we.target_sets
+        return total
+
+    @property
+    def total_reps(self):
+        total = 0
+        for we in self.workout_exercises.all():
+            total += we.target_sets * we.target_reps
+        return total
+
+    @property
+    def muscle_groups(self):
+        """Returns sorted unique muscle groups targeted in this workout."""
+        groups = set()
+        for we in self.workout_exercises.select_related("exercise"):
+            groups.add(we.exercise.muscle_group)
+        return sorted(groups)
+
+    @property
+    def category_summary(self):
+        """
+        Returns a breakdown by exercise category (muscle group):
+        - category: name of category (e.g., 'Legs', 'Arms', 'Chest')
+        - count: number of exercises in this category
+        - total_reps: total reps (sets * reps) for this category in the workout
+        """
+        categories = {}
+        for we in self.workout_exercises.select_related("exercise"):
+            cat = we.exercise.muscle_group
+            if cat not in categories:
+                categories[cat] = {
+                    "category": cat,
+                    "count": 0,
+                    "total_reps": 0,
+                }
+            categories[cat]["count"] += 1
+            categories[cat]["total_reps"] += we.target_sets * we.target_reps
+
+        result = []
+        for cat_name in sorted(categories.keys()):
+            result.append(categories[cat_name])
+        return result
+
+    @property
+    def estimated_duration_minutes(self):
+        """
+        Estimates total workout duration in minutes (~105s per set).
+        """
+        if self.exercise_count == 0:
+            return 0
+        total_seconds = self.total_sets * 105
+        return max(15, round(total_seconds / 60))
+
+    def is_scheduled_on(self, day_index):
+        if not self.scheduled_days:
+            return False
+        return day_index in self.scheduled_days or str(day_index) in self.scheduled_days
+
+    @property
+    def scheduled_days_display(self):
+        if not self.scheduled_days:
+            return "Unscheduled"
+        int_days = []
+        for d in self.scheduled_days:
+            if str(d).isdigit():
+                val = int(d)
+                if 0 <= val <= 6 and val not in int_days:
+                    int_days.append(val)
+        int_days.sort()
+        if len(int_days) == 7:
+            return "Daily"
+        labels = []
+        for d in int_days:
+            if d in self.DAY_ABBR:
+                labels.append(self.DAY_ABBR[d])
+        return ", ".join(labels)
+
+    @property
+    def scheduled_day_indices(self):
+        indices = []
+        if not self.scheduled_days:
+            return indices
+        for d in self.scheduled_days:
+            if str(d).isdigit():
+                val = int(d)
+                if 0 <= val <= 6 and val not in indices:
+                    indices.append(val)
+        indices.sort()
+        return indices
+
+    @property
+    def plan_exercises(self):
+        """Backward-compatibility alias."""
+        return self.workout_exercises
+
+
+class WorkoutExercise(models.Model):
+    """
+    An exercise assigned to a workout with prescription parameters:
+    target sets, target reps, and weight (optional / bodyweight).
+    """
+
     workout = models.ForeignKey(
         Workout,
         on_delete=models.CASCADE,
@@ -135,11 +211,6 @@ class WorkoutExercise(models.Model):
         blank=True,
         help_text="Target weight in kg (optional; bodyweight if blank or 0).",
     )
-    scheduled_days = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Days of the week this exercise is scheduled (0=Monday, 6=Sunday).",
-    )
     order = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -158,24 +229,6 @@ class WorkoutExercise(models.Model):
             return f"{val} kg"
         return "Bodyweight"
 
-    def is_scheduled_on(self, day_index):
-        if not self.scheduled_days:
-            return False
-        return day_index in self.scheduled_days or str(day_index) in self.scheduled_days
-
-    @property
-    def scheduled_days_display(self):
-        if not self.scheduled_days:
-            return "Unscheduled"
-        int_days = sorted(int(d) for d in self.scheduled_days if str(d).isdigit() and 0 <= int(d) <= 6)
-        if len(int_days) == 7:
-            return "Daily"
-        return ", ".join(self.DAY_ABBR[d] for d in int_days if d in self.DAY_ABBR)
-
-    @property
-    def scheduled_day_indices(self):
-        return [int(d) for d in self.scheduled_days if str(d).isdigit() and 0 <= int(d) <= 6]
-
     @property
     def plan(self):
         """Backward-compatibility alias."""
@@ -187,8 +240,7 @@ class WorkoutExercise(models.Model):
 
     def __str__(self):
         weight_str = f" @ {self.weight_display}"
-        days_str = f" [{self.scheduled_days_display}]" if self.scheduled_days else ""
-        return f"{self.workout.name} - {self.exercise.name} ({self.target_sets}x{self.target_reps}{weight_str}){days_str}"
+        return f"{self.workout.name} - {self.exercise.name} ({self.target_sets}x{self.target_reps}{weight_str})"
 
 
 class WorkoutSchedule(models.Model):

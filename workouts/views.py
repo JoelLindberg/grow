@@ -43,44 +43,11 @@ DAY_NAME_MAP = {
 # -----------------------------------------------------------------------------
 
 
-def get_filtered_exercises(user, filter_mode="latest"):
-    """
-    Returns exercises ordered by the requested filter mode:
-    - 'latest': latest added exercises
-    - 'oldest': oldest exercises
-    - 'least_scheduled': exercises scheduled fewest times across user's workouts
-    - 'most_scheduled': exercises scheduled most times across user's workouts
-    """
-    wes = WorkoutExercise.objects.filter(workout__user=user)
-    schedule_counts = {}
-    for we in wes:
-        count = len(we.scheduled_days) if we.scheduled_days else 1
-        schedule_counts[we.exercise_id] = schedule_counts.get(we.exercise_id, 0) + count
-
-    for ws in WorkoutSchedule.objects.filter(user=user, is_active=True):
-        for we in ws.workout.workout_exercises.all():
-            schedule_counts[we.exercise_id] = schedule_counts.get(we.exercise_id, 0) + 1
-
-    all_exercises = list(Exercise.objects.all())
-    for ex in all_exercises:
-        ex.schedule_count = schedule_counts.get(ex.id, 0)
-
-    if filter_mode == "latest":
-        return sorted(all_exercises, key=lambda e: (e.created_at, e.id), reverse=True)
-    elif filter_mode == "oldest":
-        return sorted(all_exercises, key=lambda e: (e.created_at, e.id))
-    elif filter_mode == "least_scheduled":
-        return sorted(all_exercises, key=lambda e: (e.schedule_count, e.name))
-    elif filter_mode == "most_scheduled":
-        return sorted(all_exercises, key=lambda e: (-e.schedule_count, e.name))
-    else:
-        return sorted(all_exercises, key=lambda e: (e.muscle_group, e.name))
-
-
 def get_schedule_for_week(user):
     """
     Assembles a full week calendar data structure for the user,
     respecting their preferred week_start_day (Monday vs Sunday).
+    Only complete Workouts are scheduled (never individual exercises).
     """
     profile, _ = UserProfile.objects.get_or_create(user=user)
     ordered_weekdays = profile.get_ordered_weekdays()
@@ -101,7 +68,9 @@ def get_schedule_for_week(user):
     )
 
     schedules = list(
-        WorkoutSchedule.objects.filter(user=user, is_active=True).select_related("workout")
+        WorkoutSchedule.objects.filter(user=user, is_active=True)
+        .select_related("workout")
+        .prefetch_related("workout__workout_exercises__exercise")
     )
 
     week_days_data = []
@@ -110,40 +79,49 @@ def get_schedule_for_week(user):
         is_today = day_date == today
 
         day_workouts = {}
+
+        # 1. Workouts scheduled via Workout.scheduled_days
+        for w in workouts:
+            if w.is_scheduled_on(day_idx):
+                exercises = list(w.workout_exercises.all())
+                day_workouts[w.id] = {
+                    "workout": w,
+                    "plan": w,  # template compatibility
+                    "recurrence": "Weekly",
+                    "exercises": exercises,
+                    "categories": w.category_summary,
+                    "total_sets": w.total_sets,
+                    "total_reps": w.total_reps,
+                }
+
+        # 2. Workouts scheduled via recurring WorkoutSchedule rules
         for ws in schedules:
             matches_schedule = (
                 ws.recurrence == "daily"
                 or (ws.recurrence == "weekly" and ws.day_of_week == day_idx)
                 or (ws.recurrence == "monthly" and day_date.day == ws.created_at.day)
             )
-            if matches_schedule:
-                if ws.workout_id not in day_workouts:
-                    day_workouts[ws.workout_id] = {
-                        "workout": ws.workout,
-                        "plan": ws.workout,  # template compatibility
-                        "recurrence": ws.get_recurrence_display(),
-                        "exercises": list(ws.workout.workout_exercises.all()),
-                    }
-
-        for w in workouts:
-            matching_exercises = [we for we in w.workout_exercises.all() if we.is_scheduled_on(day_idx)]
-            if matching_exercises:
-                if w.id in day_workouts:
-                    existing_ex_ids = {we.id for we in day_workouts[w.id]["exercises"]}
-                    for me in matching_exercises:
-                        if me.id not in existing_ex_ids:
-                            day_workouts[w.id]["exercises"].append(me)
-                else:
-                    day_workouts[w.id] = {
-                        "workout": w,
-                        "plan": w,  # template compatibility
-                        "recurrence": "Weekly Split",
-                        "exercises": matching_exercises,
-                    }
+            if matches_schedule and ws.workout_id not in day_workouts:
+                w = ws.workout
+                exercises = list(w.workout_exercises.all())
+                day_workouts[w.id] = {
+                    "workout": w,
+                    "plan": w,  # template compatibility
+                    "recurrence": ws.get_recurrence_display(),
+                    "exercises": exercises,
+                    "categories": w.category_summary,
+                    "total_sets": w.total_sets,
+                    "total_reps": w.total_reps,
+                }
 
         workouts_list = list(day_workouts.values())
-        total_exercises = sum(len(dw["exercises"]) for dw in workouts_list)
-        total_sets = sum(sum(we.target_sets for we in dw["exercises"]) for dw in workouts_list)
+        total_exercises = 0
+        total_sets = 0
+        total_reps = 0
+        for dw in workouts_list:
+            total_exercises += len(dw["exercises"])
+            total_sets += dw["total_sets"]
+            total_reps += dw["total_reps"]
 
         week_days_data.append(
             {
@@ -154,13 +132,45 @@ def get_schedule_for_week(user):
                 "is_today": is_today,
                 "workouts": workouts_list,
                 "plans": workouts_list,  # template compatibility
+                "workout_count": len(workouts_list),
                 "total_exercises": total_exercises,
                 "total_sets": total_sets,
-                "has_workouts": total_exercises > 0,
+                "total_reps": total_reps,
+                "has_workouts": len(workouts_list) > 0,
             }
         )
 
     return profile, week_days_data
+
+
+def _filter_uncompleted_today_workouts(user, scheduled_workouts, today):
+    """
+    Filter out workouts scheduled for today that have already been marked as completed today.
+    Returns (uncompleted_workouts, all_today_completed).
+    """
+    if not scheduled_workouts:
+        return [], False
+
+    completed_logs = WorkoutLog.objects.filter(
+        user=user,
+        date=today,
+        status="completed",
+    )
+    completed_ids = set(
+        completed_logs.exclude(workout__isnull=True).values_list("workout_id", flat=True)
+    )
+    completed_names = set(
+        completed_logs.filter(workout__isnull=True).values_list("workout_name", flat=True)
+    )
+
+    uncompleted = []
+    for dw in scheduled_workouts:
+        workout_obj = dw["workout"]
+        if workout_obj.id not in completed_ids and workout_obj.name not in completed_names:
+            uncompleted.append(dw)
+
+    all_today_completed = len(scheduled_workouts) > 0 and len(uncompleted) == 0
+    return uncompleted, all_today_completed
 
 
 # -----------------------------------------------------------------------------
@@ -171,21 +181,31 @@ def get_schedule_for_week(user):
 @login_required
 def dashboard_view(request):
     """
-    Main member dashboard: displays today's scheduled workout,
-    plant-based nutrition tracker, and recovery status.
-    Widgets link directly to their corresponding views as per User Flows.
+    Main member dashboard (User Flows: Dashboard):
+    - Workouts widget: Today's uncompleted Workouts with 'Start Workout' next to each scheduled workout,
+      'All workouts completed for today' if all scheduled workouts for today are completed,
+      or 'No workouts scheduled for today' if none are scheduled, plus 'Edit Workouts' link.
+    - Meals widget: Today's Meals & Edit Meals (blank placeholder for now).
+    - Weekly Schedule widget: Compact overview showing days with scheduled Workouts and count, plus 'Edit Schedule' link.
+    - Workout History widget: Completed workouts count and completion rate percentage.
     """
-    workouts = Workout.objects.filter(user=request.user)
+    workouts = Workout.objects.filter(user=request.user).prefetch_related("workout_exercises__exercise")
     today = timezone.localdate()
     today_weekday = today.weekday()
 
-    _, week_data = get_schedule_for_week(request.user)
-    today_day_data = next((d for d in week_data if d["day_index"] == today_weekday), None)
+    profile, week_data = get_schedule_for_week(request.user)
+    today_day_data = None
+    for d in week_data:
+        if d["day_index"] == today_weekday:
+            today_day_data = d
+            break
 
-    today_workouts = today_day_data["workouts"] if today_day_data else []
+    scheduled_today_workouts = today_day_data["workouts"] if today_day_data else []
+    today_workouts, all_today_completed = _filter_uncompleted_today_workouts(
+        request.user, scheduled_today_workouts, today
+    )
+
     today_exercises = []
-    today_workout_title = "Rest Day"
-
     if today_workouts:
         primary_workout = today_workouts[0]
         today_workout_title = primary_workout["workout"].name
@@ -196,29 +216,54 @@ def dashboard_view(request):
                         "id": we.id,
                         "name": we.exercise.name,
                         "muscle_group": we.exercise.muscle_group,
+                        "completed_sets": 0,
+                        "target_sets": we.target_sets,
                         "sets": we.target_sets,
                         "reps": we.target_reps,
                         "weight": float(we.target_weight_kg) if we.target_weight_kg else 0,
                         "completed": False,
                     }
                 )
+    elif all_today_completed:
+        today_workout_title = "All workouts completed for today"
+    else:
+        today_workout_title = "No workouts scheduled for today"
 
-    recent_logs = WorkoutLog.objects.filter(user=request.user).order_by("-date", "-completed_at")[:5]
+    scheduled_week_days = [d for d in week_data if d["has_workouts"]]
+
+    all_logs = WorkoutLog.objects.filter(user=request.user)
+    total_logs_count = all_logs.count()
+    total_completed_count = all_logs.filter(status="completed").count()
+    if total_logs_count > 0:
+        completion_rate = round((total_completed_count / total_logs_count) * 100)
+    else:
+        completion_rate = 0
+
+    recent_logs = all_logs.order_by("-date", "-completed_at")[:5]
 
     return render(
         request,
         "dashboard.html",
         {
+            "profile": profile,
             "workouts": workouts,
             "workout_plans": workouts,  # compatibility
             "has_workouts": workouts.exists(),
             "has_plans": workouts.exists(),
             "today_day_name": DAY_NAME_MAP.get(today_weekday, "Today"),
             "today_date": today,
+            "today_workouts": today_workouts,
             "today_workout_title": today_workout_title,
             "today_exercises": today_exercises,
-            "today_has_workouts": len(today_exercises) > 0,
+            "today_has_workouts": len(today_workouts) > 0,
+            "all_today_completed": all_today_completed,
             "today_day_data": today_day_data,
+            "week_data": week_data,
+            "week_days_data": week_data,
+            "scheduled_week_days": scheduled_week_days,
+            "total_completed": total_completed_count,
+            "total_logs": total_logs_count,
+            "completion_rate": completion_rate,
             "recent_logs": recent_logs,
         },
     )
@@ -278,21 +323,26 @@ def workout_create_view(request):
 @login_required
 def workout_edit_view(request, workout_id):
     """
-    Full-featured workout editor (as specified in User Flows 'Workout editor'):
-    - Update workout name and description.
-    - Add, edit, remove, and reorder exercises.
-    - Set sets, reps, weight, rest time, and scheduled days of week.
+    Full-featured workout editor (as specified in User Flows 'Workouts view'):
+    - Update workout name, description, and scheduled days of the week.
+    - Add, edit, remove, and reorder exercises (sets, reps, weight).
     """
     workout = get_object_or_404(Workout, id=workout_id, user=request.user)
 
     if request.method == "POST":
-        workout_form = WorkoutForm(request.POST, instance=workout)
+        post_data = request.POST.copy()
+        if not post_data.get("name"):
+            post_data["name"] = workout.name
+        if "description" not in post_data:
+            post_data["description"] = workout.description
+
+        workout_form = WorkoutForm(post_data, instance=workout)
         if workout_form.is_valid():
             workout_form.save()
             messages.success(request, f"Saved workout '{workout.name}'.")
             if request.headers.get("HX-Request"):
                 return HttpResponse(
-                    '<span id="save-status" class="text-xs font-semibold text-emerald-400 animate-pulse">✓ Saved</span>'
+                    '<span id="save-status" class="text-xs font-semibold text-[var(--status-success)]">✓ Workout Saved</span>'
                 )
             return redirect("workouts:workout_edit", workout_id=workout.id)
     else:
@@ -344,6 +394,7 @@ def workout_duplicate_view(request, workout_id):
             user=request.user,
             name=f"{source_workout.name} (Copy)",
             description=source_workout.description,
+            scheduled_days=list(source_workout.scheduled_days or []),
         )
         for we in source_workout.workout_exercises.all():
             WorkoutExercise.objects.create(
@@ -352,7 +403,6 @@ def workout_duplicate_view(request, workout_id):
                 target_sets=we.target_sets,
                 target_reps=we.target_reps,
                 target_weight_kg=we.target_weight_kg,
-                scheduled_days=list(we.scheduled_days),
                 order=we.order,
             )
 
@@ -375,7 +425,6 @@ def _render_exercise_list(request, workout):
             "workout": workout,
             "plan": workout,  # compatibility
             "exercises": exercises,
-            "day_choices": DAY_CHOICES,
         },
     )
 
@@ -384,7 +433,7 @@ def _render_exercise_list(request, workout):
 @require_POST
 def workout_exercise_add_view(request, workout_id):
     """
-    Add an exercise to the workout with scheduled days of the week.
+    Add an exercise to the workout (sets, reps, optional weight).
     Supports HTMX swap for zero-reload list update.
     """
     workout = get_object_or_404(Workout, id=workout_id, user=request.user)
@@ -393,8 +442,6 @@ def workout_exercise_add_view(request, workout_id):
     if form.is_valid():
         we = form.save(commit=False)
         we.workout = workout
-        days = request.POST.getlist("days")
-        we.scheduled_days = [int(d) for d in days if str(d).isdigit() and 0 <= int(d) <= 6]
         max_order = workout.workout_exercises.aggregate(models.Max("order"))["order__max"] or 0
         we.order = max_order + 1
         we.save()
@@ -406,7 +453,7 @@ def workout_exercise_add_view(request, workout_id):
     else:
         if request.headers.get("HX-Request"):
             return HttpResponse(
-                f'<div class="p-3 bg-red-950/40 text-red-300 text-xs rounded-lg">Error adding exercise: {form.errors}</div>',
+                f'<div class="p-3 badge-danger text-xs rounded-lg">Error adding exercise: {form.errors}</div>',
                 status=400,
             )
         messages.error(request, "Could not add exercise. Please check input values.")
@@ -417,7 +464,7 @@ def workout_exercise_add_view(request, workout_id):
 @login_required
 def workout_exercise_edit_view(request, workout_id, exercise_id):
     """
-    Edit prescription (sets, reps, weight, rest, days) of an exercise in a workout.
+    Edit prescription (sets, reps, weight) of an exercise in a workout.
     GET: returns editable row / form partial.
     POST: updates exercise and returns refreshed exercise list.
     """
@@ -427,10 +474,7 @@ def workout_exercise_edit_view(request, workout_id, exercise_id):
     if request.method == "POST":
         form = WorkoutExerciseForm(request.POST, instance=workout_exercise)
         if form.is_valid():
-            we = form.save(commit=False)
-            days = request.POST.getlist("days")
-            we.scheduled_days = [int(d) for d in days if str(d).isdigit() and 0 <= int(d) <= 6]
-            we.save()
+            we = form.save()
             workout.save()  # update timestamp
             if request.headers.get("HX-Request"):
                 return _render_exercise_list(request, workout)
@@ -449,7 +493,6 @@ def workout_exercise_edit_view(request, workout_id, exercise_id):
                 "workout_exercise": workout_exercise,
                 "plan_exercise": workout_exercise,  # compatibility
                 "form": form,
-                "day_choices": DAY_CHOICES,
             },
         )
     return redirect("workouts:workout_edit", workout_id=workout.id)
@@ -521,46 +564,71 @@ def workout_exercise_move_view(request, workout_id, exercise_id, direction):
 
 
 # -----------------------------------------------------------------------------
-# Workout Execution & Result Tracking (User Flows: Workout Steps 1-10 & PRD)
+# Workout Execution & Result Tracking (User Flows: Today's Workout Steps 1-10)
 # -----------------------------------------------------------------------------
 
 
 @login_required
 def workout_today_view(request):
     """
-    Dedicated view for performing today's scheduled workout:
-    - Step 4: Shows workouts scheduled for today.
-    - Step 5: Options to Start workout, Postpone for next day, or Mark as skipped.
-    - Step 6-8: Exercise list with pre-filled counters for sets and reps,
-      + and - buttons to increment/decrement reps and sets, and checkboxes to mark complete.
-    - Step 9-10: When completed, save workout session to workout history.
-    - Result tracking: well-rested status and reflections/notes.
+    Workout Perform view for performing today's scheduled workout (User Flows: Today's Workout Steps 6-10):
+    - Shows uncompleted workouts scheduled for today (or a specific workout if ?workout=<id> is passed).
+    - Options to Start workout, Postpone for next day, or Mark as skipped.
+    - Exercise list with pre-filled counters:
+      - Sets: 0 / TOTAL SETS set in the Workout for the given exercise (+ / - buttons).
+      - Reps: reps for the current set (+ / - buttons).
+      - Weight: weight for the current set (+ / - buttons).
+      - Checkbox to mark each exercise as completed.
+    - Saves progress in client cache/storage until the user clicks Save Workout, which marks it
+      completed permanently in the database.
     """
     today = timezone.localdate()
     today_weekday = today.weekday()
 
     _, week_data = get_schedule_for_week(request.user)
-    today_day_data = next((d for d in week_data if d["day_index"] == today_weekday), None)
+    today_day_data = None
+    for d in week_data:
+        if d["day_index"] == today_weekday:
+            today_day_data = d
+            break
 
-    today_workouts = today_day_data["workouts"] if today_day_data else []
+    scheduled_today_workouts = today_day_data["workouts"] if today_day_data else []
+    today_workouts, all_today_completed = _filter_uncompleted_today_workouts(
+        request.user, scheduled_today_workouts, today
+    )
+
+    selected_workout_id = request.GET.get("workout")
+    if selected_workout_id and str(selected_workout_id).isdigit():
+        target_id = int(selected_workout_id)
+        filtered = []
+        for dw in today_workouts:
+            if dw["workout"].id == target_id:
+                filtered.append(dw)
+        if filtered:
+            today_workouts = filtered
+
     today_exercises = []
     primary_workout = None
 
     if today_workouts:
-        primary_workout = today_workouts[0]["workout"]
-        for w in today_workouts:
-            for we in w["exercises"]:
-                today_exercises.append(
-                    {
-                        "id": we.id,
-                        "name": we.exercise.name,
-                        "muscle_group": we.exercise.muscle_group,
-                        "sets": we.target_sets,
-                        "reps": we.target_reps,
-                        "weight": float(we.target_weight_kg) if we.target_weight_kg else 0,
-                        "completed": False,
-                    }
-                )
+        active_workout_entry = today_workouts[0]
+        primary_workout = active_workout_entry["workout"]
+        for we in active_workout_entry["exercises"]:
+            today_exercises.append(
+                {
+                    "id": we.id,
+                    "name": we.exercise.name,
+                    "muscle_group": we.exercise.muscle_group,
+                    "completed_sets": 0,
+                    "target_sets": we.target_sets,
+                    "sets": we.target_sets,
+                    "reps": we.target_reps,
+                    "target_reps": we.target_reps,
+                    "weight": float(we.target_weight_kg) if we.target_weight_kg else 0,
+                    "target_weight": float(we.target_weight_kg) if we.target_weight_kg else 0,
+                    "completed": False,
+                }
+            )
 
     log_form = WorkoutLogForm()
 
@@ -573,7 +641,8 @@ def workout_today_view(request):
             "today_workouts": today_workouts,
             "primary_workout": primary_workout,
             "today_exercises": today_exercises,
-            "has_workouts": len(today_exercises) > 0,
+            "has_workouts": len(today_workouts) > 0,
+            "all_today_completed": all_today_completed,
             "log_form": log_form,
         },
     )
@@ -584,29 +653,51 @@ def workout_today_view(request):
 def workout_postpone_view(request):
     """
     Postpone today's workout for the next day (User Flows Step 5).
+    Moves the scheduled Workout from today_weekday to tomorrow_weekday.
     """
     today = timezone.localdate()
     today_weekday = today.weekday()
     tomorrow_weekday = (today_weekday + 1) % 7
 
     _, week_data = get_schedule_for_week(request.user)
-    today_day_data = next((d for d in week_data if d["day_index"] == today_weekday), None)
+    today_day_data = None
+    for d in week_data:
+        if d["day_index"] == today_weekday:
+            today_day_data = d
+            break
 
-    if today_day_data and today_day_data["workouts"]:
+    scheduled_today_workouts = today_day_data["workouts"] if today_day_data else []
+    uncompleted_workouts, _ = _filter_uncompleted_today_workouts(
+        request.user, scheduled_today_workouts, today
+    )
+
+    workout_id_raw = request.POST.get("workout_id")
+    if workout_id_raw and str(workout_id_raw).isdigit():
+        target_id = int(workout_id_raw)
+        uncompleted_workouts = [dw for dw in uncompleted_workouts if dw["workout"].id == target_id]
+
+    if uncompleted_workouts:
         with transaction.atomic():
-            for dw in today_day_data["workouts"]:
-                for we in dw["exercises"]:
-                    days = set(we.scheduled_days or [])
-                    days.discard(today_weekday)
-                    days.discard(str(today_weekday))
-                    days.add(tomorrow_weekday)
-                    we.scheduled_days = sorted(list(days))
-                    we.save()
+            for dw in uncompleted_workouts:
+                workout = dw["workout"]
+                days = set(workout.scheduled_day_indices)
+                days.discard(today_weekday)
+                days.add(tomorrow_weekday)
+                workout.scheduled_days = sorted(list(days))
+                workout.save()
+
+                # Also update any weekly WorkoutSchedule rules for this workout on today_weekday
+                WorkoutSchedule.objects.filter(
+                    user=request.user,
+                    workout=workout,
+                    day_of_week=today_weekday,
+                    recurrence="weekly",
+                ).update(day_of_week=tomorrow_weekday)
 
             WorkoutLog.objects.create(
                 user=request.user,
-                workout=today_day_data["workouts"][0]["workout"],
-                workout_name=today_day_data["workouts"][0]["workout"].name,
+                workout=uncompleted_workouts[0]["workout"],
+                workout_name=uncompleted_workouts[0]["workout"].name,
                 date=today,
                 status="postponed",
                 notes="Postponed to tomorrow.",
@@ -629,12 +720,29 @@ def workout_skip_view(request):
     today_weekday = today.weekday()
 
     _, week_data = get_schedule_for_week(request.user)
-    today_day_data = next((d for d in week_data if d["day_index"] == today_weekday), None)
+    today_day_data = None
+    for d in week_data:
+        if d["day_index"] == today_weekday:
+            today_day_data = d
+            break
+
+    scheduled_today_workouts = today_day_data["workouts"] if today_day_data else []
+    uncompleted_workouts, _ = _filter_uncompleted_today_workouts(
+        request.user, scheduled_today_workouts, today
+    )
 
     workout_obj = None
     workout_name = "Daily Workout"
-    if today_day_data and today_day_data["workouts"]:
-        workout_obj = today_day_data["workouts"][0]["workout"]
+    workout_id_raw = request.POST.get("workout_id")
+    if workout_id_raw and str(workout_id_raw).isdigit():
+        target_id = int(workout_id_raw)
+        for dw in uncompleted_workouts:
+            if dw["workout"].id == target_id:
+                workout_obj = dw["workout"]
+                workout_name = workout_obj.name
+                break
+    elif uncompleted_workouts:
+        workout_obj = uncompleted_workouts[0]["workout"]
         workout_name = workout_obj.name
 
     WorkoutLog.objects.create(
@@ -662,7 +770,6 @@ def workout_save_session_view(request):
     - Stores snapshot of completed exercises
     """
     today = timezone.localdate()
-    today_weekday = today.weekday()
 
     workout_id = request.POST.get("workout_id")
     workout_name = request.POST.get("workout_name", "Workout Session")
@@ -737,10 +844,15 @@ def workout_save_session_view(request):
 @login_required
 def workout_history_view(request):
     """
-    Displays workout history: logged sessions, completed goals, rest reflections, and notes.
+    Displays workout history: logged sessions, completion rate, rest reflections, and notes.
     """
     logs = WorkoutLog.objects.filter(user=request.user).order_by("-date", "-completed_at")
+    total_logs = logs.count()
     total_completed = logs.filter(status="completed").count()
+    if total_logs > 0:
+        completion_rate = round((total_completed / total_logs) * 100)
+    else:
+        completion_rate = 0
     well_rested_count = logs.filter(status="completed", well_rested=True).count()
     needs_rest_count = logs.filter(status="completed", well_rested=False).count()
 
@@ -749,7 +861,9 @@ def workout_history_view(request):
         "workouts/workout_history.html",
         {
             "logs": logs,
+            "total_logs": total_logs,
             "total_completed": total_completed,
+            "completion_rate": completion_rate,
             "well_rested_count": well_rested_count,
             "needs_rest_count": needs_rest_count,
         },
@@ -757,35 +871,31 @@ def workout_history_view(request):
 
 
 # -----------------------------------------------------------------------------
-# Workout Schedule Views (PRD & User Flows prioritized feature)
+# Workout Schedule Views (User Flows: Weekly Schedule)
 # -----------------------------------------------------------------------------
 
 
 @login_required
 def schedule_week_view(request):
     """
-    Calendar view of workouts for the week (User Flows Step 3):
-    - Vertical mobile-first layout.
-    - Displays workout title and exercises with sets, reps, weight in finer text.
-    - Allows switching week start preference (Monday vs Sunday).
-    - Links to day schedule editor.
+    Calendar view of Workouts for the week (User Flows: Weekly Schedule):
+    - Displays Workout title for each day.
+    - Displays count of each category (e.g. Legs, Arms, Chest) and total reps per category.
+    - If a day is empty, displays option to 'Add Workout'.
+    - Clicking a day opens the day schedule editor to add/remove Workouts for that day.
     """
     profile, week_days_data = get_schedule_for_week(request.user)
-    recurring_schedules = (
-        WorkoutSchedule.objects.filter(user=request.user)
-        .select_related("workout")
-        .order_by("day_of_week")
+    user_workouts = (
+        Workout.objects.filter(user=request.user)
+        .prefetch_related("workout_exercises__exercise")
+        .order_by("name")
     )
-    user_workouts = Workout.objects.filter(user=request.user).order_by("name")
-    assign_form = WorkoutScheduleForm(user=request.user)
 
     context = {
         "profile": profile,
         "week_days_data": week_days_data,
-        "recurring_schedules": recurring_schedules,
         "user_workouts": user_workouts,
         "user_plans": user_workouts,  # compatibility
-        "assign_form": assign_form,
     }
 
     if request.headers.get("HX-Request") and request.GET.get("partial") == "week_overview":
@@ -811,12 +921,18 @@ def schedule_week_start_preference_view(request):
 
     if request.headers.get("HX-Request"):
         profile, week_days_data = get_schedule_for_week(request.user)
+        user_workouts = (
+            Workout.objects.filter(user=request.user)
+            .prefetch_related("workout_exercises__exercise")
+            .order_by("name")
+        )
         return render(
             request,
             "workouts/partials/schedule_week_overview.html",
             {
                 "profile": profile,
                 "week_days_data": week_days_data,
+                "user_workouts": user_workouts,
             },
         )
 
@@ -826,26 +942,36 @@ def schedule_week_start_preference_view(request):
 @login_required
 def schedule_day_view(request, day_index):
     """
-    Edit the schedule for a specific day (User Flows Workout Schedule Steps 4-6):
-    - Lists workouts and exercises currently scheduled on that day.
-    - Provides exercise selector dropdown filtered by:
-      latest added, oldest, least scheduled, most scheduled.
-    - Allows multi-select adding exercises to this day.
+    Edit the schedule for a specific day (User Flows: Weekly Schedule Step 4):
+    - Lists Workouts currently scheduled on that day.
+    - Allows adding and removing Workouts for that day.
+    - Schedule is updated/saved immediately after adding or removing a Workout.
     """
     if day_index < 0 or day_index > 6:
         return HttpResponseBadRequest("Invalid day of week")
 
     profile, week_days_data = get_schedule_for_week(request.user)
-    day_data = next((d for d in week_days_data if d["day_index"] == day_index), None)
+    day_data = None
+    for d in week_days_data:
+        if d["day_index"] == day_index:
+            day_data = d
+            break
 
-    active_filter = request.GET.get("filter", "latest")
-    filtered_exercises = get_filtered_exercises(request.user, active_filter)
-
-    user_workouts = Workout.objects.filter(user=request.user).order_by("name")
-    assign_form = WorkoutScheduleForm(
-        initial={"day_of_week": day_index, "recurrence": "weekly"},
-        user=request.user,
+    user_workouts = (
+        Workout.objects.filter(user=request.user)
+        .prefetch_related("workout_exercises__exercise")
+        .order_by("name")
     )
+
+    scheduled_workout_ids = set()
+    if day_data:
+        for dw in day_data["workouts"]:
+            scheduled_workout_ids.add(dw["workout"].id)
+
+    available_workouts = []
+    for w in user_workouts:
+        if w.id not in scheduled_workout_ids:
+            available_workouts.append(w)
 
     return render(
         request,
@@ -855,157 +981,139 @@ def schedule_day_view(request, day_index):
             "day_index": day_index,
             "day_name": DAY_NAME_MAP[day_index],
             "day_data": day_data,
-            "active_filter": active_filter,
-            "filtered_exercises": filtered_exercises,
             "user_workouts": user_workouts,
-            "user_plans": user_workouts,  # compatibility
-            "assign_form": assign_form,
-        },
-    )
-
-
-@login_required
-def schedule_filtered_exercises_view(request, day_index):
-    """
-    HTMX partial endpoint to dynamically refresh the exercise filter dropdown results:
-    - Latest added exercises
-    - Oldest exercises
-    - Least scheduled exercises
-    - Most scheduled exercises
-    """
-    if day_index < 0 or day_index > 6:
-        return HttpResponseBadRequest("Invalid day of week")
-
-    active_filter = request.GET.get("filter", "latest")
-    filtered_exercises = get_filtered_exercises(request.user, active_filter)
-    user_workouts = Workout.objects.filter(user=request.user).order_by("name")
-
-    return render(
-        request,
-        "workouts/partials/schedule_filtered_exercises.html",
-        {
-            "day_index": day_index,
-            "day_name": DAY_NAME_MAP[day_index],
-            "active_filter": active_filter,
-            "filtered_exercises": filtered_exercises,
-            "user_workouts": user_workouts,
-            "user_plans": user_workouts,  # compatibility
+            "available_workouts": available_workouts,
+            "scheduled_workout_ids": scheduled_workout_ids,
         },
     )
 
 
 @login_required
 @require_POST
-def schedule_day_exercise_add_view(request, day_index):
+def schedule_day_workout_add_view(request, day_index):
     """
-    Add selected exercises to the schedule for the chosen day.
-    Accepts one or more exercise IDs from checkboxes and attaches them
-    to the selected or default workout with this day in scheduled_days.
+    Add one or more Workouts to the schedule for a specific day (User Flows: Weekly Schedule Steps 3 & 4).
+    Immediately updates and saves the Workout's scheduled_days.
     """
     if day_index < 0 or day_index > 6:
         return HttpResponseBadRequest("Invalid day of week")
 
-    exercise_ids = request.POST.getlist("selected_exercises")
-    if not exercise_ids:
-        messages.error(request, "Please select at least one exercise to add.")
+    workout_ids = request.POST.getlist("workout_id")
+    if not workout_ids:
+        single_id = request.POST.get("workout")
+        if single_id:
+            workout_ids = [single_id]
+
+    if not workout_ids:
+        messages.error(request, "Please select a workout to add.")
         return redirect("workouts:schedule_day", day_index=day_index)
 
-    workout_id = request.POST.get("workout_id") or request.POST.get("plan_id")
-    if workout_id:
-        workout = get_object_or_404(Workout, id=workout_id, user=request.user)
-    else:
-        workout = Workout.objects.filter(user=request.user).first()
-        if not workout:
-            workout = Workout.objects.create(
-                user=request.user,
-                name=f"{DAY_NAME_MAP[day_index]} Routine",
-                description="Custom scheduled workout",
-            )
-
-    target_sets = int(request.POST.get("target_sets", 3) or 3)
-    target_reps = int(request.POST.get("target_reps", 10) or 10)
-    target_weight_kg = request.POST.get("target_weight_kg")
-    target_weight_kg = float(target_weight_kg) if target_weight_kg else None
-
-    added_count = 0
+    added_names = []
     with transaction.atomic():
-        for ex_id in exercise_ids:
-            try:
-                ex = Exercise.objects.get(id=ex_id)
-            except Exercise.DoesNotExist:
+        for wid in workout_ids:
+            if not str(wid).isdigit():
                 continue
+            workout = get_object_or_404(Workout, id=int(wid), user=request.user)
+            days = set(workout.scheduled_day_indices)
+            days.add(day_index)
+            workout.scheduled_days = sorted(list(days))
+            workout.save()
+            added_names.append(workout.name)
 
-            we = workout.workout_exercises.filter(exercise=ex).first()
-            if we:
-                days = set(we.scheduled_days or [])
-                days.add(day_index)
-                we.scheduled_days = sorted(list(days))
-                we.save()
-            else:
-                max_order = workout.workout_exercises.aggregate(models.Max("order"))["order__max"] or 0
-                WorkoutExercise.objects.create(
-                    workout=workout,
-                    exercise=ex,
-                    target_sets=target_sets,
-                    target_reps=target_reps,
-                    target_weight_kg=target_weight_kg,
-                    scheduled_days=[day_index],
-                    order=max_order + 1,
-                )
-            added_count += 1
-        workout.save()
+    if added_names:
+        names_str = ", ".join(added_names)
+        messages.success(request, f"Added '{names_str}' to {DAY_NAME_MAP[day_index]}.")
 
-    messages.success(
-        request,
-        f"Added {added_count} exercise(s) to {DAY_NAME_MAP[day_index]}'s schedule under '{workout.name}'.",
-    )
+    if request.POST.get("next") == "schedule":
+        return redirect("workouts:schedule")
     return redirect("workouts:schedule_day", day_index=day_index)
 
 
 @login_required
 @require_POST
-def schedule_day_exercise_remove_view(request, day_index, workout_exercise_id):
+def schedule_day_workout_remove_view(request, day_index, workout_id):
     """
-    Remove an exercise from a specific day's schedule.
-    Removes day_index from scheduled_days.
+    Remove a Workout from a specific day's schedule (User Flows: Weekly Schedule Step 4).
     """
-    we = get_object_or_404(WorkoutExercise, id=workout_exercise_id, workout__user=request.user)
-    exercise_name = we.exercise.name
+    if day_index < 0 or day_index > 6:
+        return HttpResponseBadRequest("Invalid day of week")
 
-    current_days = set(we.scheduled_days or [])
-    if day_index in current_days or str(day_index) in current_days:
-        current_days.discard(day_index)
-        current_days.discard(str(day_index))
-        we.scheduled_days = sorted(list(current_days))
-        we.save()
-        we.workout.save()
+    workout = get_object_or_404(Workout, id=workout_id, user=request.user)
+    days = set(workout.scheduled_day_indices)
+    days.discard(day_index)
+    workout.scheduled_days = sorted(list(days))
+    workout.save()
 
-    messages.success(request, f"Removed {exercise_name} from {DAY_NAME_MAP.get(day_index, '')}'s schedule.")
+    # Also remove any WorkoutSchedule records for this workout on this day
+    WorkoutSchedule.objects.filter(
+        user=request.user,
+        workout=workout,
+        day_of_week=day_index,
+    ).delete()
+
+    messages.success(request, f"Removed '{workout.name}' from {DAY_NAME_MAP[day_index]}.")
+
+    if request.POST.get("next") == "schedule":
+        return redirect("workouts:schedule")
     return redirect("workouts:schedule_day", day_index=day_index)
+
+
+@login_required
+@require_POST
+def schedule_clear_all_view(request):
+    """
+    Clear all workouts from the weekly schedule (User Flows: Dashboard / Weekly Schedule).
+    """
+    with transaction.atomic():
+        for workout in Workout.objects.filter(user=request.user):
+            if workout.scheduled_days:
+                workout.scheduled_days = []
+                workout.save()
+        WorkoutSchedule.objects.filter(user=request.user).delete()
+
+    messages.success(request, "Cleared all workouts from the weekly schedule.")
+    return redirect("workouts:schedule")
 
 
 @login_required
 @require_POST
 def schedule_workout_assign_view(request):
     """
-    Assign a workout to recurring intervals (daily, weekly, monthly)
-    or to a specific day of the week.
+    Assign a workout to a day of the week (or recurring interval).
+    Updates Workout.scheduled_days for weekly assignments.
     """
-    form = WorkoutScheduleForm(request.POST, user=request.user)
-    if form.is_valid():
-        ws = form.save(commit=False)
-        ws.user = request.user
-        ws.save()
-        messages.success(
-            request,
-            f"Scheduled '{ws.workout.name}' ({ws.get_recurrence_display()} on {DAY_NAME_MAP.get(ws.day_of_week)}).",
-        )
-    else:
-        messages.error(request, "Could not assign workout. Please verify the selections.")
+    workout_id = request.POST.get("workout")
+    day_idx_raw = request.POST.get("day_of_week")
+    recurrence = request.POST.get("recurrence", "weekly")
 
-    day_idx = request.POST.get("day_of_week")
-    if day_idx is not None and str(day_idx).isdigit():
-        return redirect("workouts:schedule_day", day_index=int(day_idx))
+    if workout_id and str(workout_id).isdigit() and day_idx_raw is not None and str(day_idx_raw).isdigit():
+        workout = get_object_or_404(Workout, id=int(workout_id), user=request.user)
+        day_idx = int(day_idx_raw)
+        if 0 <= day_idx <= 6:
+            if recurrence == "weekly":
+                days = set(workout.scheduled_day_indices)
+                days.add(day_idx)
+                workout.scheduled_days = sorted(list(days))
+                workout.save()
+            elif recurrence == "daily":
+                workout.scheduled_days = [0, 1, 2, 3, 4, 5, 6]
+                workout.save()
+            WorkoutSchedule.objects.update_or_create(
+                user=request.user,
+                workout=workout,
+                day_of_week=day_idx,
+                recurrence=recurrence,
+                defaults={"is_active": True},
+            )
+            messages.success(
+                request,
+                f"Scheduled '{workout.name}' on {DAY_NAME_MAP.get(day_idx)}.",
+            )
+            if request.POST.get("next") == "schedule":
+                return redirect("workouts:schedule")
+            return redirect("workouts:schedule_day", day_index=day_idx)
+
+    messages.error(request, "Could not assign workout. Please verify the selections.")
     return redirect("workouts:schedule")
 
 
@@ -1018,7 +1126,7 @@ def schedule_assignment_delete_view(request, schedule_id):
     ws = get_object_or_404(WorkoutSchedule, id=schedule_id, user=request.user)
     workout_name = ws.workout.name
     ws.delete()
-    messages.success(request, f"Removed recurring schedule for '{workout_name}'.")
+    messages.success(request, f"Removed schedule for '{workout_name}'.")
     return redirect("workouts:schedule")
 
 

@@ -28,10 +28,14 @@
     </div>
 
     <!-- Summary Stats Bar -->
-    <div class="grid grid-cols-3 gap-3 tabular-nums">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 tabular-nums">
         <div class="card-theme p-4 text-center">
             <span class="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)] block">Completed</span>
             <span class="text-xl sm:text-2xl font-bold text-[var(--text-primary)] mt-1 block">{{ total_completed }}</span>
+        </div>
+        <div class="card-theme p-4 text-center">
+            <span class="text-[10px] font-medium uppercase tracking-wider text-accent block">Completion Rate</span>
+            <span class="text-xl sm:text-2xl font-bold text-accent mt-1 block">{{ completion_rate }}%</span>
         </div>
         <div class="card-theme p-4 text-center">
             <span class="text-[10px] font-medium uppercase tracking-wider text-[var(--status-success)] block">Well Rested</span>

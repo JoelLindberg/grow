@@ -4,8 +4,26 @@ from workouts.models import Exercise, Workout, WorkoutExercise, WorkoutLog, Work
 
 class WorkoutForm(forms.ModelForm):
     """
-    Form for creating and editing a workout's title and description.
+    Form for creating and editing a workout's title, description,
+    and scheduled days of the week.
     """
+
+    DAY_CHOICES = [
+        (0, "Mon"),
+        (1, "Tue"),
+        (2, "Wed"),
+        (3, "Thu"),
+        (4, "Fri"),
+        (5, "Sat"),
+        (6, "Sun"),
+    ]
+
+    days = forms.MultipleChoiceField(
+        choices=DAY_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple(),
+        help_text="Days of the week this workout is scheduled on.",
+    )
 
     class Meta:
         model = Workout
@@ -28,30 +46,35 @@ class WorkoutForm(forms.ModelForm):
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.scheduled_days:
+            initial_days = []
+            for d in self.instance.scheduled_days:
+                initial_days.append(str(d))
+            self.fields["days"].initial = initial_days
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        selected_days = self.cleaned_data.get("days", [])
+        parsed_days = []
+        for d in selected_days:
+            if str(d).isdigit():
+                val = int(d)
+                if 0 <= val <= 6 and val not in parsed_days:
+                    parsed_days.append(val)
+        parsed_days.sort()
+        instance.scheduled_days = parsed_days
+        if commit:
+            instance.save()
+        return instance
+
 
 class WorkoutExerciseForm(forms.ModelForm):
     """
     Form for adding or editing an exercise within a workout.
-    Provides touch-friendly controls for sets, reps, weight (optional/bodyweight),
-    rest intervals (default 60s), and days of the week scheduling.
+    Provides touch-friendly controls for sets, reps, and weight (optional/bodyweight).
     """
-
-    DAY_CHOICES = [
-        (0, "Mon"),
-        (1, "Tue"),
-        (2, "Wed"),
-        (3, "Thu"),
-        (4, "Fri"),
-        (5, "Sat"),
-        (6, "Sun"),
-    ]
-
-    days = forms.MultipleChoiceField(
-        choices=DAY_CHOICES,
-        required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "accent-orange-500"}),
-        help_text="Days of the week this exercise is scheduled for.",
-    )
 
     class Meta:
         model = WorkoutExercise
@@ -100,22 +123,12 @@ class WorkoutExerciseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["exercise"].queryset = Exercise.objects.all().order_by("muscle_group", "name")
         self.fields["target_weight_kg"].required = False
-        if self.instance and self.instance.pk:
-            self.fields["days"].initial = [str(d) for d in self.instance.scheduled_days]
 
     def clean_target_weight_kg(self):
         val = self.cleaned_data.get("target_weight_kg")
         if val is None or val == 0:
             return None
         return val
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        selected_days = self.cleaned_data.get("days", [])
-        instance.scheduled_days = [int(d) for d in selected_days if str(d).isdigit() and 0 <= int(d) <= 6]
-        if commit:
-            instance.save()
-        return instance
 
 
 class WorkoutScheduleForm(forms.ModelForm):

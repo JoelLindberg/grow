@@ -160,6 +160,7 @@ erDiagram
         int user_id FK
         string name
         string description
+        json scheduled_days
     }
 
     WorkoutExercise {
@@ -169,7 +170,6 @@ erDiagram
         int target_sets
         int target_reps
         decimal target_weight_kg
-        json scheduled_days
         int order
     }
 
