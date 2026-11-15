@@ -1,5 +1,7 @@
 # UX workflows
 
+
+
 ## Dashboard
 
 1. Login
@@ -58,20 +60,25 @@ Intended usage workflow for adding, removing and editing a Workout:
 3. Click on create `Workout` or Select an existing `Workout` (if any) to edit
 4. Edit the `Workout`
     * Add exercises
-        * Select an exercise from the exercise database
-        * Set the number of sets
-        * Set the number of reps per set
-        * Set the weight (optional) if not set, then the exercise is bodyweight
-        * Click on add exercise
+        1. Click the "+ Add Exercise" button
+        2. An exercise modal opens displaying the list of available exercises
+          * Select an exercise from the exercise database
+          * Set the number of sets
+          * Set the number of reps per set
+          * Set the weight (optional) if not set, then the exercise is bodyweight
+          * Click on "+ Add Exercise"
+            - This closes the modal and automatically saves the `Workout` (to avoid having to use a save button)
+          * Newly added exercises should be added on the top of the exercise list (not sorted alphabetically). So the latest added should always be seen on top.
     * Remove exercises
-        * Click on remove exercise
+        * Click on remove exercise (bin icon)
     * Edit exercises
-        * Click on edit exercise
+        * Click on edit exercise (pen icon)
         * Change the number of sets
         * Change the number of reps per set
         * Change the weight
         * Click on save exercise
-5. Give the user the option to select which days of the week the Workout should be scheduled on.
+5. When done editing, the user can click "Done" or use the breadcrumb navigation menu item "\< Workouts" to go back one step
+5. Back in the Workouts view Give the user the option to select which days of the week the Workout should be scheduled on.
 6. Save the `Workout`
 
 

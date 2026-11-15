@@ -5,19 +5,21 @@
 {% block content %}
 <div class="space-y-6">
 
-    <!-- Top Navigation & Breadcrumbs -->
-    <div class="flex items-center justify-between gap-3">
-        <a href="{% url 'workouts:schedule' %}"
-            class="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Weekly Schedule</span>
-        </a>
-
-        <div class="flex items-center gap-2">
+    <!-- Adaptive Sub-Navigation (Sticky Top Breadcrumbs + Mobile Bottom / Desktop Top Action Bar) -->
+    <div class="subnav-shell">
+        <div class="subnav-breadcrumbs">
             <a href="{% url 'workouts:schedule' %}"
-                class="btn-gym btn-secondary-gym px-3.5 text-xs font-medium">
+                class="inline-flex items-center gap-1.5 min-h-[36px] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Weekly Schedule</span>
+            </a>
+        </div>
+
+        <div class="subnav-actions">
+            <a href="{% url 'workouts:schedule' %}"
+                class="btn-gym btn-secondary-gym px-4 text-xs sm:text-sm font-semibold">
                 Done
             </a>
         </div>

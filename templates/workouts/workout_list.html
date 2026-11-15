@@ -3,27 +3,42 @@
 {% block title %}Workouts — GROW{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-5">
 
-    <!-- Top Header & Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border-subtle)]">
-        <div>
-            <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Routines</span>
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-0.5">
-                Workouts
-            </h1>
-            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
-                Define exercises, target sets, reps, and weight.
-            </p>
+    <!-- Adaptive Sub-Navigation:
+         - Mobile: Sticky Top Breadcrumbs + Floating Bottom Thumb-Zone Action Bar (Crystallized Glass)
+         - Desktop: Unified Sticky Top Crystallized Glass Bar -->
+    <div class="subnav-shell">
+        <div class="subnav-breadcrumbs">
+            <a href="{% url 'dashboard' %}"
+                class="inline-flex items-center gap-1.5 min-h-[36px] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Today</span>
+            </a>
         </div>
 
-        <a href="{% url 'workouts:workout_create' %}"
-            class="btn-gym btn-primary-gym px-4 text-sm font-semibold gap-2 shrink-0">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Create Workout</span>
-        </a>
+        <div class="subnav-actions">
+            <a href="{% url 'workouts:workout_create' %}"
+                class="btn-gym btn-primary-gym px-4 text-xs sm:text-sm font-semibold gap-1.5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Create Workout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Page Title -->
+    <div class="section-theme px-1">
+        <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Routines</span>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-0.5">
+            Workouts
+        </h1>
+        <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
+            Define exercises, target sets, reps, and weight, and schedule which days of the week each Workout applies to.
+        </p>
     </div>
 
     <!-- Feedback messages -->
@@ -98,11 +113,49 @@
                 {% endif %}
             </div>
 
+            <!-- Schedule Workout on Days of the Week & Save Workout (Action & result in the same location) -->
+            <form method="post" action="{% url 'workouts:workout_edit' workout.id %}"
+                hx-post="{% url 'workouts:workout_edit' workout.id %}"
+                hx-target="#workout-save-status-{{ workout.id }}"
+                hx-swap="innerHTML"
+                class="p-3.5 space-y-2.5">
+                {% csrf_token %}
+                <input type="hidden" name="name" value="{{ workout.name }}">
+                <input type="hidden" name="description" value="{{ workout.description }}">
+                <input type="hidden" name="next" value="list">
+
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-[var(--text-secondary)]">
+                        Schedule Days
+                    </span>
+                    <span id="workout-save-status-{{ workout.id }}" class="text-xs"></span>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1">
+                    {% for day_val, day_name in day_choices %}
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="days" value="{{ day_val }}"
+                            {% if day_val in workout.scheduled_day_indices %}checked{% endif %}
+                            class="sr-only peer">
+                        <div class="h-11 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex flex-col items-center justify-center text-xs font-semibold text-[var(--text-secondary)] peer-checked:bg-[var(--accent-primary)] peer-checked:text-white peer-checked:border-[var(--accent-primary)] transition-colors">
+                            <span>{{ day_name }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <div class="pt-1 flex items-center justify-end">
+                    <button type="submit" class="btn-gym btn-primary-gym w-full sm:w-auto px-4 text-xs font-semibold">
+                        Save Workout
+                    </button>
+                </div>
+            </form>
+
             <!-- Footer Action Controls -->
             <div class="p-3 bg-[var(--bg-surface-elevated)] flex items-center justify-between gap-2">
                 <a href="{% url 'workouts:workout_edit' workout.id %}"
-                    class="btn-gym btn-primary-gym flex-1 text-xs font-semibold">
-                    Edit Workout &rarr;
+                    class="btn-gym btn-secondary-gym flex-1 text-xs font-semibold">
+                    Edit Exercises &rarr;
                 </a>
 
                 <!-- Duplicate Action -->

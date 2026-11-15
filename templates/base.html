@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="GROW">
@@ -234,12 +234,12 @@
     </header>
 
     <!-- Main Content Container -->
-    <main class="flex-1 max-w-3xl w-full mx-auto px-2.5 sm:px-6 py-4 sm:py-6">
+    <main class="flex-1 max-w-3xl w-full mx-auto px-2.5 sm:px-6 pt-3 pb-24 sm:py-6">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Minimal Footer -->
-    <footer class="mt-auto border-t border-[var(--border-subtle)] py-6 text-center text-xs text-[var(--text-muted)]">
+    <footer class="mt-auto border-t border-[var(--border-subtle)] pt-6 pb-24 sm:py-6 text-center text-xs text-[var(--text-muted)]">
         <div class="max-w-3xl mx-auto px-2.5 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p class="text-[var(--text-secondary)]">"The stronger you get, the kinder you become."</p>
             <p>GROW <span class="text-[var(--text-secondary)] font-mono">{{ APP_VERSION }}</span> &copy; 2026</p>

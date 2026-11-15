@@ -43,7 +43,8 @@
   --bg-surface-subtle: hsl(var(--tint-hue), 18%, 94.5%);
 
   /* Liquid Glass Chrome (Used selectively on sticky header & floating bars) */
-  --bg-surface-glass: rgba(252, 250, 247, 0.48);
+  --bg-surface-glass: rgba(252, 250, 247, 0.56);
+  --bg-modal-glass: rgba(253, 252, 251, 0.76);
   --border-glass-specular: rgba(255, 255, 255, 0.78);
   --shadow-glass: 0 10px 30px -6px rgba(28, 25, 23, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
   --shadow-card: 0 1px 3px rgba(28, 25, 23, 0.04), 0 1px 2px rgba(28, 25, 23, 0.02), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
@@ -96,7 +97,8 @@
   --bg-surface-subtle: hsl(var(--tint-hue), 8%, 13.5%);
 
   /* Liquid Glass Chrome */
-  --bg-surface-glass: rgba(40, 36, 33, 0.46);
+  --bg-surface-glass: rgba(40, 36, 33, 0.56);
+  --bg-modal-glass: rgba(43, 39, 37, 0.78);
   --border-glass-specular: rgba(255, 255, 255, 0.14);
   --shadow-glass: 0 12px 32px -6px rgba(0, 0, 0, 0.42), inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
   --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.18), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
@@ -164,14 +166,128 @@ body {
 .surface-glass,
 .card-theme-glass {
   background: var(--bg-surface-glass);
-  backdrop-filter: blur(22px) saturate(190%);
-  -webkit-backdrop-filter: blur(22px) saturate(190%);
-  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(24px) saturate(195%);
+  -webkit-backdrop-filter: blur(24px) saturate(195%);
+  border: 1px solid var(--border-glass-specular);
   box-shadow: var(--shadow-glass);
 }
 
 .card-theme-glass {
   border-radius: 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   5B. ADAPTIVE SUB-NAVIGATION, THUMB-ZONE ACTION BAR & CRYSTALLIZED MODAL
+   - Mobile (< 640px):
+     * .subnav-breadcrumbs sticks to the top below the main header (position: sticky).
+     * .subnav-actions floats at the bottom thumb zone (position: fixed; bottom: 0)
+       with env(safe-area-inset-bottom) padding so buttons never overlap system gestures.
+   - Desktop (>= 640px):
+     * .subnav-shell unifies breadcrumbs and actions into a single sticky top
+       crystallized glass bar directly below the main header.
+   -------------------------------------------------------------------------- */
+@media (max-width: 639px) {
+  .subnav-shell {
+    display: contents;
+  }
+
+  .subnav-breadcrumbs {
+    position: sticky;
+    top: 3.8125rem;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.875rem;
+    background: var(--bg-surface-glass);
+    backdrop-filter: blur(24px) saturate(195%);
+    -webkit-backdrop-filter: blur(24px) saturate(195%);
+    border: 1px solid var(--border-glass-specular);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .subnav-actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 0.75rem 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: var(--bg-surface-glass);
+    backdrop-filter: blur(26px) saturate(200%);
+    -webkit-backdrop-filter: blur(26px) saturate(200%);
+    border-top: 1px solid var(--border-glass-specular);
+    box-shadow: 0 -8px 28px -6px rgba(0, 0, 0, 0.14), inset 0 1px 0 0 var(--border-glass-specular);
+  }
+
+  .subnav-actions > .btn-gym,
+  .subnav-actions > form {
+    flex: 1 1 auto;
+  }
+
+  .subnav-actions > form > .btn-gym {
+    width: 100%;
+  }
+}
+
+@media (min-width: 640px) {
+  .subnav-shell {
+    position: sticky;
+    top: 3.8125rem;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
+    border-radius: 1rem;
+    background: var(--bg-surface-glass);
+    backdrop-filter: blur(24px) saturate(195%);
+    -webkit-backdrop-filter: blur(24px) saturate(195%);
+    border: 1px solid var(--border-glass-specular);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .subnav-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .subnav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+/* Crystallized Liquid Glass Modal Dialog (<dialog class="modal-glass">) */
+dialog.modal-glass {
+  width: calc(100% - 1.25rem);
+  max-width: 28rem;
+  max-height: 90dvh;
+  margin: auto;
+  padding: 0;
+  border-radius: 1.25rem;
+  color: var(--text-primary);
+  background: var(--bg-modal-glass);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--border-glass-specular);
+  box-shadow: var(--shadow-glass);
+  overflow-y: auto;
+}
+
+dialog.modal-glass::backdrop {
+  background: rgba(18, 16, 14, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* Flat section container (Apple HIG Inset Grouped pattern):
@@ -295,7 +411,14 @@ body {
   color: var(--text-muted);
 }
 
-.input-gym:focus {
+.btn-gym:focus-visible,
+.counter-btn:focus-visible {
+  outline: 2px solid var(--border-active);
+  outline-offset: 2px;
+}
+
+.input-gym:focus,
+.input-gym:focus-visible {
   outline: none;
   border-color: var(--border-active);
   background-color: var(--bg-surface);

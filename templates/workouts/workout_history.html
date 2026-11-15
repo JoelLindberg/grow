@@ -5,26 +5,37 @@
 {% block content %}
 <div class="space-y-6">
 
-    <!-- Top Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[var(--border-subtle)]">
-        <div>
-            <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Activity Log</span>
-            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-0.5">
-                Workout History
-            </h1>
-            <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
-                Past workout sessions, completion results, readiness status, and notes.
-            </p>
+    <!-- Adaptive Sub-Navigation (Sticky Top Breadcrumbs + Mobile Bottom / Desktop Top Action Bar) -->
+    <div class="subnav-shell">
+        <div class="subnav-breadcrumbs">
+            <a href="{% url 'dashboard' %}"
+                class="inline-flex items-center gap-1.5 min-h-[36px] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Today</span>
+            </a>
         </div>
 
-        <div class="flex items-center gap-2">
-            <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-4 text-xs font-semibold">
+        <div class="subnav-actions">
+            <a href="{% url 'workouts:workout_today' %}" class="btn-gym btn-primary-gym px-4 text-xs sm:text-sm font-semibold">
                 Today's Workout &rarr;
             </a>
-            <a href="{% url 'workouts:workout_list' %}" class="btn-gym btn-secondary-gym px-4 text-xs font-medium">
+            <a href="{% url 'workouts:workout_list' %}" class="btn-gym btn-secondary-gym px-4 text-xs sm:text-sm font-medium">
                 Workouts
             </a>
         </div>
+    </div>
+
+    <!-- Top Header -->
+    <div class="section-theme px-1">
+        <span class="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Activity Log</span>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-0.5">
+            Workout History
+        </h1>
+        <p class="text-xs sm:text-sm text-[var(--text-muted)] mt-0.5">
+            Past workout sessions, completion results, readiness status, and notes.
+        </p>
     </div>
 
     <!-- Summary Stats Bar -->

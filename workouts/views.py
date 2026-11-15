@@ -278,7 +278,8 @@ def dashboard_view(request):
 def workout_list_view(request):
     """
     Display all workouts belonging to the authenticated user.
-    Provides entry point for creating new workouts or editing existing ones.
+    Provides entry point for creating new workouts, editing existing ones,
+    and scheduling workouts across days of the week directly on the card.
     """
     workouts = (
         Workout.objects.filter(user=request.user)
@@ -291,6 +292,7 @@ def workout_list_view(request):
         {
             "workouts": workouts,
             "plans": workouts,  # compatibility
+            "day_choices": DAY_CHOICES,
         },
     )
 
@@ -342,8 +344,12 @@ def workout_edit_view(request, workout_id):
             messages.success(request, f"Saved workout '{workout.name}'.")
             if request.headers.get("HX-Request"):
                 return HttpResponse(
-                    '<span id="save-status" class="text-xs font-semibold text-[var(--status-success)]">✓ Workout Saved</span>'
+                    f'<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold badge-success">'
+                    f'✓ Workout Saved ({workout.scheduled_days_display})'
+                    f'</span>'
                 )
+            if request.POST.get("next") == "list":
+                return redirect("workouts:workout_list")
             return redirect("workouts:workout_edit", workout_id=workout.id)
     else:
         workout_form = WorkoutForm(instance=workout)
@@ -442,10 +448,11 @@ def workout_exercise_add_view(request, workout_id):
     if form.is_valid():
         we = form.save(commit=False)
         we.workout = workout
-        max_order = workout.workout_exercises.aggregate(models.Max("order"))["order__max"] or 0
-        we.order = max_order + 1
-        we.save()
-        workout.save()  # update timestamp
+        with transaction.atomic():
+            workout.workout_exercises.update(order=models.F("order") + 1)
+            we.order = 0
+            we.save()
+            workout.save()  # update timestamp
 
         if request.headers.get("HX-Request"):
             return _render_exercise_list(request, workout)

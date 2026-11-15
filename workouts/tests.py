@@ -49,39 +49,39 @@ class HomeExerciseDatabaseTests(TestCase):
 
     def test_home_exercise_variations_exist(self):
         # Push-up variations (normal, narrow, wide, decline)
-        self.assertTrue(Exercise.objects.filter(name="Push-Up (Normal)").exists())
-        self.assertTrue(Exercise.objects.filter(name="Push-Up (Narrow / Diamond)").exists())
-        self.assertTrue(Exercise.objects.filter(name="Push-Up (Wide)").exists())
-        self.assertTrue(Exercise.objects.filter(name="Decline Push-Up").exists())
+        self.assertTrue(Exercise.objects.filter(name="Push-Up - Normal").exists())
+        self.assertTrue(Exercise.objects.filter(name="Push-Up - Narrow / Diamond").exists())
+        self.assertTrue(Exercise.objects.filter(name="Push-Up - Wide").exists())
+        self.assertTrue(Exercise.objects.filter(name="Push-Up - Decline").exists())
 
         # Squat variations (normal, wide / sumo)
-        self.assertTrue(Exercise.objects.filter(name="Bodyweight Squat (Normal)").exists())
-        self.assertTrue(Exercise.objects.filter(name="Bodyweight Squat (Wide / Sumo)").exists())
+        self.assertTrue(Exercise.objects.filter(name="Squats - Normal Stance").exists())
+        self.assertTrue(Exercise.objects.filter(name="Squats - Wide / Sumo Stance").exists())
 
         # Calf raise variations (standing, single-leg)
-        self.assertTrue(Exercise.objects.filter(name="Standing Calf Raise").exists())
-        self.assertTrue(Exercise.objects.filter(name="Single-Leg Calf Raise").exists())
+        self.assertTrue(Exercise.objects.filter(name="Calf Raises - Standing").exists())
+        self.assertTrue(Exercise.objects.filter(name="Calf Raises - Single-Leg").exists())
 
-        # Dumbbell raise on the floor above head for chest (Floor Dumbbell Pullover)
-        self.assertTrue(Exercise.objects.filter(name="Floor Dumbbell Pullover").exists())
+        # Dumbbell raise on the floor above head for chest (Chest Pullover - Dumbbell)
+        self.assertTrue(Exercise.objects.filter(name="Chest Pullover - Dumbbell").exists())
 
         # Ab wheel core training
-        self.assertTrue(Exercise.objects.filter(name="Ab Wheel Rollout (Kneeling)").exists())
+        self.assertTrue(Exercise.objects.filter(name="Ab Wheel Rollout - Kneeling").exists())
 
 
 class WorkoutModelTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="gym_rat", password="StrongPassword123!")
         self.pushup_normal = Exercise.objects.get_or_create(
-            name="Push-Up (Normal)",
+            name="Push-Up - Normal",
             defaults={"muscle_group": "Chest", "description": "Pushup"},
         )[0]
         self.pullover = Exercise.objects.get_or_create(
-            name="Floor Dumbbell Pullover",
+            name="Chest Pullover - Dumbbell",
             defaults={"muscle_group": "Chest", "description": "Floor pullover"},
         )[0]
         self.wheel = Exercise.objects.get_or_create(
-            name="Ab Wheel Rollout (Kneeling)",
+            name="Ab Wheel Rollout - Kneeling",
             defaults={"muscle_group": "Core", "description": "Ab wheel"},
         )[0]
 
@@ -151,15 +151,15 @@ class WorkoutWorkflowTests(TestCase):
         self.client.force_login(self.user)
 
         self.pushup_normal = Exercise.objects.get_or_create(
-            name="Push-Up (Normal)",
+            name="Push-Up - Normal",
             defaults={"muscle_group": "Chest", "description": "Pushup"},
         )[0]
         self.pullover = Exercise.objects.get_or_create(
-            name="Floor Dumbbell Pullover",
+            name="Chest Pullover - Dumbbell",
             defaults={"muscle_group": "Chest", "description": "Floor pullover"},
         )[0]
         self.wheel = Exercise.objects.get_or_create(
-            name="Ab Wheel Rollout (Kneeling)",
+            name="Ab Wheel Rollout - Kneeling",
             defaults={"muscle_group": "Core", "description": "Wheel"},
         )[0]
 
@@ -227,12 +227,53 @@ class WorkoutWorkflowTests(TestCase):
         }
         htmx_response = self.client.post(add_url, weighted_data, HTTP_HX_REQUEST="true")
         self.assertEqual(htmx_response.status_code, 200)
-        self.assertContains(htmx_response, "Floor Dumbbell Pullover")
+        self.assertContains(htmx_response, "Chest Pullover - Dumbbell")
         self.assertContains(htmx_response, "14.5 kg")
 
         we2 = WorkoutExercise.objects.get(workout=workout, exercise=self.pullover)
         self.assertEqual(we2.target_weight_kg, Decimal("14.50"))
         self.assertFalse(we2.is_bodyweight)
+
+        # 3. Verify newly added exercise is placed at the TOP of the list (before earlier exercises)
+        ordered_exercises = list(workout.workout_exercises.order_by("order", "id"))
+        self.assertEqual(ordered_exercises[0].id, we2.id)
+        self.assertEqual(ordered_exercises[1].id, we1.id)
+
+    def test_workout_editor_modal_and_subnav_and_workout_list_scheduling(self):
+        """
+        Verify Workout Editor uses the adaptive subnav + crystallized glass modal
+        (without inline Workout Schedule / Save Workout), and Workouts list view
+        allows selecting scheduled days and saving the Workout in place.
+        """
+        workout = Workout.objects.create(user=self.user, name="Adaptive UI Workout")
+
+        # 1. Workout Editor view
+        editor_res = self.client.get(reverse("workouts:workout_edit", kwargs={"workout_id": workout.id}))
+        self.assertEqual(editor_res.status_code, 200)
+        self.assertContains(editor_res, 'class="subnav-shell"')
+        self.assertContains(editor_res, 'id="add-exercise-modal"')
+        self.assertContains(editor_res, 'class="modal-glass"')
+        self.assertNotContains(editor_res, "Workout Schedule")
+        self.assertNotContains(editor_res, "Save Workout")
+
+        # 2. Workouts List view includes days-of-the-week selector and Save Workout button
+        list_res = self.client.get(reverse("workouts:workout_list"))
+        self.assertEqual(list_res.status_code, 200)
+        self.assertContains(list_res, 'class="subnav-shell"')
+        self.assertContains(list_res, "Schedule Days")
+        self.assertContains(list_res, "Save Workout")
+
+        # 3. Saving scheduled days via HTMX from the Workouts list returns inline confirmation
+        edit_url = reverse("workouts:workout_edit", kwargs={"workout_id": workout.id})
+        htmx_save = self.client.post(
+            edit_url,
+            {"name": workout.name, "description": "", "days": ["1", "4"], "next": "list"},
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(htmx_save.status_code, 200)
+        self.assertContains(htmx_save, "✓ Workout Saved (Tue, Fri)")
+        workout.refresh_from_db()
+        self.assertEqual(workout.scheduled_days, [1, 4])
 
     def test_edit_exercise_weight_and_prescription(self):
         workout = Workout.objects.create(user=self.user, name="Home Workout")
@@ -309,15 +350,15 @@ class WorkoutScheduleTests(TestCase):
         self.user = User.objects.create_user(username="scheduler_user", password="StrongPassword123!")
         self.client.force_login(self.user)
         self.pushup = Exercise.objects.get_or_create(
-            name="Push-Up (Normal)",
+            name="Push-Up - Normal",
             defaults={"muscle_group": "Chest", "description": "Pushup"},
         )[0]
         self.squat = Exercise.objects.get_or_create(
-            name="Bodyweight Squat (Normal)",
+            name="Squats - Normal Stance",
             defaults={"muscle_group": "Legs", "description": "Squat"},
         )[0]
         self.wheel = Exercise.objects.get_or_create(
-            name="Ab Wheel Rollout (Kneeling)",
+            name="Ab Wheel Rollout - Kneeling",
             defaults={"muscle_group": "Core", "description": "Ab wheel"},
         )[0]
 
@@ -511,11 +552,11 @@ class WorkoutExecutionAndResultTrackingTests(TestCase):
         self.client.force_login(self.user)
 
         self.pushup = Exercise.objects.get_or_create(
-            name="Push-Up (Normal)",
+            name="Push-Up - Normal",
             defaults={"muscle_group": "Chest", "description": "Pushup"},
         )[0]
         self.wheel = Exercise.objects.get_or_create(
-            name="Ab Wheel Rollout (Kneeling)",
+            name="Ab Wheel Rollout - Kneeling",
             defaults={"muscle_group": "Core", "description": "Ab wheel"},
         )[0]
 
@@ -542,7 +583,7 @@ class WorkoutExecutionAndResultTrackingTests(TestCase):
         self.assertContains(res, "Start Workout")
         self.assertContains(res, "Postpone for Next Day")
         self.assertContains(res, "Mark as Skipped")
-        self.assertContains(res, "Push-Up (Normal)")
+        self.assertContains(res, "Push-Up - Normal")
         self.assertContains(res, '"completed_sets": 0')
         self.assertContains(res, '"target_sets": 3')
         self.assertContains(res, "grow_workout_progress_")

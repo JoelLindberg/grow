@@ -35,9 +35,10 @@ GROW intentionally combines **Apple Human Interface Guidelines (HIG)** and **Mat
 
 2. **[Apple Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)**
    - **Selective Application**: Liquid Glass is reserved **exclusively for floating navigation and chrome layers** that sit above scrolling content:
-     - Sticky top navigation header
+     - Sticky top navigation header and sticky breadcrumb bar
      - Collapsible mobile navigation menu (3-line hamburger toggle expanding a Liquid Glass sheet)
-     - Floating bottom action bar / modal sheets
+     - Floating bottom action bar (mobile thumb-zone actions) and sticky desktop sub-navigation bar
+     - Crystallized glass modal dialogs (`<dialog class="modal-glass" closedby="any">`)
    - **Never Overuse on Content**: Standard content items, exercise rows, and form inputs sit on solid tonal surfaces so scrolling content remains crisp and legible.
 
 3. **[Material Design 3 (M3)](https://m3.material.io/)**
@@ -91,4 +92,32 @@ Both Light and Dark themes are **lightly tinted** using a shared set of CSS cust
 - **44x44px Minimum**: Every interactive button, stepper (`+`/`-`), checkbox, and navigation link must have a minimum hit area of `44x44px`.
 - **Vertically Stacked Exercise Prescriptions**: When adding or editing exercises (`Sets`, `Reps`, `Weight (kg)`), stack the controls vertically in full-width inset rows rather than cramming multiple steppers side-by-side horizontally. This guarantees numbers remain clearly legible on mobile screens.
 - **Calm, Focused Layouts**: Single-column vertical flow on mobile (`9:16` proportion). Group related controls cleanly inside inset cards with clear dividers so the user can log sets mid-workout with zero cognitive load.
+
+---
+
+## 5. Mobile & Desktop Adaptive Navigation, Action Bars & Modals
+
+To ensure that every user action and its resulting feedback occur in the same visible viewport region without scrolling, GROW adapts its navigation and primary action controls between mobile and desktop viewports (`640px` / `sm:` breakpoint):
+
+### 1. Sticky Top Header for Breadcrumbs (`.subnav-breadcrumbs`)
+- Pin breadcrumbs and back buttons (e.g., `< Workouts`, `< Weekly Schedule`, `< Dashboard`) to the top of the viewport using `position: sticky` directly beneath the main application header.
+- Styled as crystallized Liquid Glass (`.surface-glass`) so navigation context stays visible while scrolling long exercise lists without blocking list items below.
+
+### 2. Responsive Action Bar: Mobile Thumb Zone vs. Desktop Sticky Top Bar (`.subnav-shell` & `.subnav-actions`)
+- **Mobile (`< 640px`) — Bottom Action Bar**:
+  - Primary view actions (such as `"+ Add Exercise"`, `"Done"`, and `"+ Create Workout"`) are placed in a floating bottom action bar (`position: fixed; bottom: 0; left: 0; right: 0`) styled with crystallized Liquid Glass.
+  - Positioning primary actions along the bottom edge places them naturally within the mobile **"thumb zone,"** making one-handed tapping effortless during workouts.
+  - Main page content includes bottom clearance padding so the floating bottom bar never obscures list items or the footer.
+- **Desktop (`>= 640px`) — Sticky Top Action Bar**:
+  - On desktop screens, `.subnav-shell` unifies the breadcrumb navigation and the action buttons into a single sticky crystallized glass bar at the top of the workspace (`position: sticky; top: 3.8125rem`), keeping breadcrumbs on the left and primary action buttons on the right.
+
+### 3. Safe Area Insets (`env(safe-area-inset-bottom)`)
+- Mobile browsers and installed PWAs on iOS and Android display system home indicator bars at the bottom of the screen.
+- The root viewport meta tag includes `viewport-fit=cover`, and `.subnav-actions` applies `padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px))` so floating bottom buttons never overlap with system home gestures.
+
+### 4. Crystallized Glass Modal Dialogs (`.modal-glass`)
+- Focused creation and selection flows (such as `"+ Add Exercise"` in the Workout Editor) use native HTML `<dialog closedby="any" class="modal-glass">` elements opened via `.showModal()`.
+- Modal surfaces use crystallized Liquid Glass (`backdrop-filter: blur(28px) saturate(200%)`, specular edge border, and a blurred translucent `::backdrop`) with `max-height: 90dvh` so forms remain scrollable and legible across mobile and desktop viewports.
+- Submitting a modal action via HTMX automatically updates the underlying list (placing newly added exercises at the top of the list) and closes the modal so the user immediately sees the result of their action without scrolling.
+
 
