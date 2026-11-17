@@ -55,12 +55,12 @@ class HomeExerciseDatabaseTests(TestCase):
         self.assertTrue(Exercise.objects.filter(name="Push-Up - Decline").exists())
 
         # Squat variations (normal, wide / sumo)
-        self.assertTrue(Exercise.objects.filter(name="Squats - Normal Stance").exists())
-        self.assertTrue(Exercise.objects.filter(name="Squats - Wide / Sumo Stance").exists())
+        self.assertTrue(Exercise.objects.filter(name="Squat - Normal Stance").exists())
+        self.assertTrue(Exercise.objects.filter(name="Squat - Wide / Sumo Stance").exists())
 
         # Calf raise variations (standing, single-leg)
-        self.assertTrue(Exercise.objects.filter(name="Calf Raises - Standing").exists())
-        self.assertTrue(Exercise.objects.filter(name="Calf Raises - Single-Leg").exists())
+        self.assertTrue(Exercise.objects.filter(name="Calf Raise - Standing").exists())
+        self.assertTrue(Exercise.objects.filter(name="Calf Raise - Single-Leg").exists())
 
         # Dumbbell raise on the floor above head for chest (Chest Pullover - Dumbbell)
         self.assertTrue(Exercise.objects.filter(name="Chest Pullover - Dumbbell").exists())
@@ -354,7 +354,7 @@ class WorkoutScheduleTests(TestCase):
             defaults={"muscle_group": "Chest", "description": "Pushup"},
         )[0]
         self.squat = Exercise.objects.get_or_create(
-            name="Squats - Normal Stance",
+            name="Squat - Normal Stance",
             defaults={"muscle_group": "Legs", "description": "Squat"},
         )[0]
         self.wheel = Exercise.objects.get_or_create(

@@ -98,12 +98,12 @@
         this.saveProgress();
     },
     incrementWeight(ex) {
-        ex.weight = Math.round((ex.weight + 2.5) * 100) / 100;
+        ex.weight = Math.round((ex.weight + 0.5) * 100) / 100;
         this.saveProgress();
     },
     decrementWeight(ex) {
-        if (ex.weight >= 2.5) {
-            ex.weight = Math.round((ex.weight - 2.5) * 100) / 100;
+        if (ex.weight >= 0.5) {
+            ex.weight = Math.round((ex.weight - 0.5) * 100) / 100;
         } else if (ex.weight > 0) {
             ex.weight = 0;
         }
